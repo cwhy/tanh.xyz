@@ -4,7 +4,7 @@
  */
 
 import { numpy as np, init, defaultDevice, valueAndGrad, tree } from '@jax-js/jax'
-import { adam, applyUpdates, type OptState } from '@jax-js/optax'
+import { adam, sgd, applyUpdates, type OptState } from '@jax-js/optax'
 
 export interface NetworkParams {
     W1: np.Array  // [2, hiddenSize]
@@ -69,8 +69,12 @@ export function initParams(hiddenSize: number = 16): NetworkParams {
 /**
  * Initialize optimizer state
  */
-export function initOptimizer(params: NetworkParams, learningRate: number): OptState {
-    const solver = adam(learningRate)
+export function initOptimizer(
+    params: NetworkParams,
+    learningRate: number,
+    optimizerType: 'adam' | 'sgd' = 'adam'
+): OptState {
+    const solver = optimizerType === 'adam' ? adam(learningRate) : sgd(learningRate)
     return solver.init(tree.ref(params))
 }
 
@@ -113,14 +117,15 @@ export function loss(params: NetworkParams, X: np.Array, y: np.Array): np.Array 
 }
 
 /**
- * Single training step with Adam optimizer
+ * Single training step with Adam or SGD optimizer
  */
 export function trainStep(
     params: NetworkParams,
     optState: OptState,
     X: np.Array,
     y: np.Array,
-    learningRate: number
+    learningRate: number,
+    optimizerType: 'adam' | 'sgd' = 'adam'
 ): { params: NetworkParams; optState: OptState; loss: number } {
     // Compute loss and gradients using valueAndGrad
     // Note: valueAndGrad will consume X and y, but not params (we use tree.ref)
@@ -134,7 +139,7 @@ export function trainStep(
     // lossVal.dispose() // Error: Referenced tracer Array:float32[] freed
 
     // Apply optimizer updates
-    const solver = adam(learningRate)
+    const solver = optimizerType === 'adam' ? adam(learningRate) : sgd(learningRate)
     const [updates, newOptState] = solver.update(lossGrad, optState)
     const newParams = applyUpdates(params, updates) as NetworkParams
 

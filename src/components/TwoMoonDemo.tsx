@@ -21,12 +21,20 @@ export function TwoMoonDemo() {
     const [loss, setLoss] = createSignal<number | null>(null)
     const [isTraining, setIsTraining] = createSignal(false)
     const [learningRate, setLearningRate] = createSignal(0.01)
+    const [optimizerType, setOptimizerType] = createSignal<'adam' | 'sgd'>('adam')
+    const [epochsPerRound, setEpochsPerRound] = createSignal(500)
     const [nSamples, setNSamples] = createSignal(100)
     const [noise, setNoise] = createSignal(0.15)
 
-    // Training data as jax arrays
+    const [batchSize, setBatchSize] = createSignal(200)
+
+    // Training data
     let X: np.Array | null = null
     let y: np.Array | null = null
+    let trainingX: number[][] = []
+    let trainingY: number[] = []
+
+    // Training state
     let optState: OptState | null = null
 
     onMount(async () => {
@@ -49,13 +57,17 @@ export function TwoMoonDemo() {
         )
         setPoints(dataset.points)
 
-        // Create jax arrays for training
+        // Store raw normalized data for training (unpadded 0-1 range)
+        trainingX = dataset.X
+        trainingY = dataset.y
+
+        // Create jax arrays for training (optimization for full batch)
         X = np.array(dataset.X)
         y = np.array(dataset.y.map(v => [v]))
 
         // Initialize new network
         const newParams = initParams(16)
-        optState = initOptimizer(newParams, learningRate())
+        optState = initOptimizer(newParams, learningRate(), optimizerType())
         setParams(newParams)
         setEpoch(0)
         setLoss(null)
@@ -63,32 +75,78 @@ export function TwoMoonDemo() {
     }
 
     const runTraining = async () => {
-        if (!params() || !X || !y || !optState || isTraining()) return
+        if (!params() || !optState || isTraining()) return
 
         setIsTraining(true)
-        const totalEpochs = 500
+        // Update batch size max when samples change
+        if (batchSize() > nSamples() * 2) {
+            setBatchSize(nSamples() * 2)
+        }
+
+        const totalEpochs = epochsPerRound()
+        const bs = batchSize()
+        const n = trainingX.length
 
         for (let i = 0; i < totalEpochs; i++) {
-            const currentParams = params()!
-            const result = trainStep(currentParams, optState, X.ref, y.ref, learningRate())
+            // Shuffle indices
+            const indices = Array.from({ length: n }, (_, k) => k)
+            for (let k = n - 1; k > 0; k--) {
+                const j = Math.floor(Math.random() * (k + 1))
+                const temp = indices[k]
+                indices[k] = indices[j]
+                indices[j] = temp
+            }
 
-            // Note: applyUpdates inside trainStep already consumed currentParams,
-            // so we don't need to dispose it manually
+            let epochTotalLoss = 0
+            let epochSamples = 0
 
-            // Update state
-            optState = result.optState
-            setParams(result.params)
-            setLoss(result.loss)
+            // Mini-batch training
+            for (let j = 0; j < n; j += bs) {
+                const currentBatchSize = Math.min(bs, n - j)
+
+                let X_batch: np.Array
+                let y_batch: np.Array
+
+                // Optimization: Use pre-loaded full dataset if doing full batch
+                if (bs >= n && X && y) {
+                    X_batch = X.ref
+                    y_batch = y.ref
+                } else {
+                    const batchIdx = indices.slice(j, j + bs)
+                    // Create tensors for this batch using trainingX/Y (0-1 range)
+                    X_batch = np.array(batchIdx.map(idx => trainingX[idx]))
+                    y_batch = np.array(batchIdx.map(idx => [trainingY[idx]]))
+                }
+
+                const currentParams = params()!
+                const result = trainStep(currentParams, optState!, X_batch, y_batch, learningRate(), optimizerType())
+
+                // Note: trainStep consumes X_batch and y_batch (via valueAndGrad),
+                // so we don't need to dispose them manually.
+
+                // Update state
+                optState = result.optState
+                setParams(result.params)
+
+                // Accumulate loss
+                epochTotalLoss += result.loss * currentBatchSize
+                epochSamples += currentBatchSize
+            }
+
+            setLoss(epochTotalLoss / epochSamples)
+
             setEpoch(e => e + 1)
 
             // Update decision boundary every 10 epochs
             if ((i + 1) % 10 === 0 || i === totalEpochs - 1) {
-                const grid = predictGrid(result.params, 40)
+                // Ensure we call predictGrid with current params
+                // predictGrid creates its own temporary X, so it's safe
+                const grid = predictGrid(params()!, 40)
                 setDecisionGrid(grid)
             }
 
             // Allow UI to update
-            await new Promise(r => setTimeout(r, 10))
+            await new Promise(r => setTimeout(r, 0))
         }
 
         setIsTraining(false)
@@ -107,7 +165,7 @@ export function TwoMoonDemo() {
                     </h2>
                     <Show when={!isLoading()}>
                         <div class="badge badge-lg gap-2 bg-primary/20 border-primary/30 text-primary">
-                            <div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                            <div class="w-2 h-2 rounded-full bg-primary animate-pulse" />
                             {device()}
                         </div>
                     </Show>
@@ -115,7 +173,7 @@ export function TwoMoonDemo() {
 
                 <Show when={!isLoading()} fallback={
                     <div class="flex flex-col items-center justify-center h-96 gap-4">
-                        <span class="loading loading-spinner loading-lg text-primary"></span>
+                        <span class="loading loading-spinner loading-lg text-primary" />
                         <span class="text-base-content/50">Initializing jax-js...</span>
                     </div>
                 }>
@@ -173,11 +231,11 @@ export function TwoMoonDemo() {
                             {/* Legend */}
                             <div class="flex gap-6 justify-center text-sm">
                                 <span class="flex items-center gap-2">
-                                    <span class="w-4 h-4 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50"></span>
+                                    <span class="w-4 h-4 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50" />
                                     <span class="text-base-content/70">Class 0</span>
                                 </span>
                                 <span class="flex items-center gap-2">
-                                    <span class="w-4 h-4 rounded-full bg-pink-400 shadow-lg shadow-pink-400/50"></span>
+                                    <span class="w-4 h-4 rounded-full bg-pink-400 shadow-lg shadow-pink-400/50" />
                                     <span class="text-base-content/70">Class 1</span>
                                 </span>
                             </div>
@@ -203,22 +261,79 @@ export function TwoMoonDemo() {
                             <div class="space-y-5">
                                 <div class="form-control">
                                     <label class="label pb-2">
+                                        <span class="label-text font-medium">Optimizer</span>
+                                    </label>
+                                    <div class="join">
+                                        <input
+                                            class="join-item btn btn-sm btn-outline px-6"
+                                            type="radio"
+                                            name="optimizer"
+                                            aria-label="Adam"
+                                            checked={optimizerType() === 'adam'}
+                                            onClick={() => {
+                                                setOptimizerType('adam')
+                                                if (params()) {
+                                                    optState = initOptimizer(params()!, learningRate(), 'adam')
+                                                }
+                                            }}
+                                            disabled={isTraining()}
+                                        />
+                                        <input
+                                            class="join-item btn btn-sm btn-outline px-6"
+                                            type="radio"
+                                            name="optimizer"
+                                            aria-label="SGD"
+                                            checked={optimizerType() === 'sgd'}
+                                            onClick={() => {
+                                                setOptimizerType('sgd')
+                                                if (params()) {
+                                                    optState = initOptimizer(params()!, learningRate(), 'sgd')
+                                                }
+                                            }}
+                                            disabled={isTraining()}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div class="form-control">
+                                    <label class="label pb-2">
                                         <span class="label-text font-medium">Learning Rate</span>
-                                        <span class="label-text-alt text-primary font-mono">{learningRate().toFixed(2)}</span>
+                                        <span class="label-text-alt text-primary font-mono">{learningRate().toFixed(3)}</span>
                                     </label>
                                     <input
                                         type="range"
-                                        min="0.01"
-                                        max="2"
-                                        step="0.01"
+                                        min="0.001"
+                                        max="1"
+                                        step="0.001"
                                         value={learningRate()}
                                         onInput={(e) => setLearningRate(parseFloat(e.currentTarget.value))}
                                         class="range range-primary range-sm"
                                         disabled={isTraining()}
                                     />
                                     <div class="flex justify-between text-xs text-base-content/40 mt-1">
-                                        <span>0.01</span>
-                                        <span>2.00</span>
+                                        <span>0.001</span>
+                                        <span>1.000</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-control">
+                                    <label class="label pb-2">
+                                        <span class="label-text font-medium">Batch Size</span>
+                                        <span class="label-text-alt text-secondary font-mono">{batchSize()}</span>
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max={nSamples() * 2}
+                                        step="1"
+                                        value={batchSize()}
+                                        onInput={(e) => setBatchSize(parseInt(e.currentTarget.value))}
+                                        class="range range-secondary range-sm"
+                                        disabled={isTraining()}
+                                    />
+                                    <div class="flex justify-between text-xs text-base-content/40 mt-1">
+                                        <span>1</span>
+                                        <span>{nSamples() * 2}</span>
                                     </div>
                                 </div>
 
@@ -267,23 +382,41 @@ export function TwoMoonDemo() {
 
                             {/* Buttons */}
                             <div class="flex gap-3 pt-2">
-                                <button
-                                    class="btn btn-primary flex-1 shadow-lg shadow-primary/20"
-                                    onClick={runTraining}
-                                    disabled={isTraining()}
+                                <div
+                                    class={`btn btn-primary flex-1 shadow-lg shadow-primary/20 flex flex-row items-center gap-2 ${isTraining() ? 'cursor-not-allowed opacity-50' : ''}`}
+                                    onClick={(e) => {
+                                        // Use e.target to verify we didn't click the input
+                                        const target = e.target as HTMLElement;
+                                        if (target.tagName !== 'INPUT' && !isTraining()) {
+                                            runTraining();
+                                        }
+                                    }}
+                                    role="button"
+                                    tabindex="0"
                                 >
                                     <Show when={isTraining()} fallback={
                                         <>
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                                             </svg>
-                                            Train Network
+                                            Train for
+                                            <input
+                                                type="number"
+                                                min="10"
+                                                max="1000"
+                                                step="10"
+                                                value={epochsPerRound()}
+                                                onInput={(e) => setEpochsPerRound(e.currentTarget.valueAsNumber)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                class="input input-sm input-ghost w-20 text-center bg-white/20 text-primary-content font-bold focus:bg-white/30 focus:outline-none p-1 rounded h-8"
+                                            />
+                                            epochs
                                         </>
                                     }>
-                                        <span class="loading loading-spinner loading-sm"></span>
+                                        <span class="loading loading-spinner loading-sm" />
                                         Training...
                                     </Show>
-                                </button>
+                                </div>
                                 <button
                                     class="btn btn-outline flex-1"
                                     onClick={generateData}

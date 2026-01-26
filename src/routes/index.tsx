@@ -16,26 +16,22 @@ function HomePage() {
         <header class="pt-12 pb-8 px-6">
           <div class="max-w-5xl mx-auto">
             {/* Logo and Title - Same Line */}
+            {/* Logo and Title - Text Logo */}
             <div class="flex items-center gap-6 mb-6">
               <img
-                src="/logo-sq.svg"
+                src="/logo-text.svg"
                 alt="tanh.xyz"
                 class="h-16 md:h-20 w-auto flex-shrink-0"
               />
-              <div>
-                <h1 class="text-3xl md:text-4xl font-bold" style="font-family: 'Kalam', cursive; color: #2d2d2d;">
-                  Neural Network Playground
-                </h1>
-              </div>
             </div>
 
-            <p class="text-lg md:text-xl mb-6 max-w-3xl" style="font-family: 'Patrick Hand', cursive; color: #2d2d2d;">
+            <p class="text-lg md:text-xl mb-6 max-w-3xl" style={{ "font-family": "'Patrick Hand', cursive", "color": "#2d2d2d" }}>
               Interactive demos running in your browser with{' '}
               <a
                 href="https://github.com/ekzhang/jax-js"
                 target="_blank"
                 class="link link-hover"
-                style="color: #ff4d4d;"
+                style={{ "color": "#ff4d4d" }}
               >
                 jax-js
               </a>
@@ -49,7 +45,7 @@ function HomePage() {
                 width="100"
                 height="60"
                 viewBox="0 0 100 60"
-                style="transform: rotate(-5deg);"
+                style={{ "transform": "rotate(-5deg)" }}
               >
                 <path
                   d="M 50 5 Q 45 25, 50 45 L 50 50 M 50 50 L 45 45 M 50 50 L 55 45"
@@ -66,7 +62,7 @@ function HomePage() {
 
         {/* Demos Grid */}
         <main class="container mx-auto px-6 pb-20 max-w-5xl">
-          <h2 class="text-3xl md:text-4xl font-bold mb-8 text-center" style="font-family: 'Kalam', cursive; color: #2d2d2d;">
+          <h2 class="text-3xl md:text-4xl font-bold mb-8 text-center" style={{ "font-family": "'Kalam', cursive", "color": "#2d2d2d" }}>
             Explore Demos
           </h2>
 
@@ -122,15 +118,15 @@ function HomePage() {
         </main>
 
         {/* Footer */}
-        <footer class="border-t-2 border-dashed py-8" style="border-color: #2d2d2d;">
+        <footer class="border-t-2 border-dashed py-8" style={{ "border-color": "#2d2d2d" }}>
           <div class="container mx-auto px-4 text-center">
-            <p class="text-sm" style="font-family: 'Patrick Hand', cursive; color: #2d2d2d;">
+            <p class="text-sm" style={{ "font-family": "'Patrick Hand', cursive", "color": "#2d2d2d" }}>
               Built with{' '}
-              <a href="https://solidjs.com" target="_blank" class="link link-hover" style="color: #2d5da1;">SolidJS</a>
+              <a href="https://solidjs.com" target="_blank" class="link link-hover" style={{ "color": "#2d5da1" }}>SolidJS</a>
               {' · '}
-              <a href="https://tanstack.com/start" target="_blank" class="link link-hover" style="color: #2d5da1;">TanStack Start</a>
+              <a href="https://tanstack.com/start" target="_blank" class="link link-hover" style={{ "color": "#2d5da1" }}>TanStack Start</a>
               {' · '}
-              <a href="https://daisyui.com" target="_blank" class="link link-hover" style="color: #2d5da1;">DaisyUI</a>
+              <a href="https://daisyui.com" target="_blank" class="link link-hover" style={{ "color": "#2d5da1" }}>DaisyUI</a>
             </p>
           </div>
         </footer>
