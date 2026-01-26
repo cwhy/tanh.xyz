@@ -1,13 +1,15 @@
-import { createSignal, createEffect, onMount, For, Show } from 'solid-js'
+import { createSignal, onMount, For, Show } from 'solid-js'
 import { generateTwoMoons, normalizeForVisualization, type DataPoint } from '../lib/two-moons'
 import {
     initJax,
     initParams,
+    initOptimizer,
     trainStep,
     predictGrid,
     type NetworkParams,
 } from '../lib/neural-net'
-import { numpy as np } from '@jax-js/jax'
+import { numpy as np, tree } from '@jax-js/jax'
+import type { OptState } from '@jax-js/optax'
 
 export function TwoMoonDemo() {
     const [isLoading, setIsLoading] = createSignal(true)
@@ -18,13 +20,14 @@ export function TwoMoonDemo() {
     const [epoch, setEpoch] = createSignal(0)
     const [loss, setLoss] = createSignal<number | null>(null)
     const [isTraining, setIsTraining] = createSignal(false)
-    const [learningRate, setLearningRate] = createSignal(0.5)
+    const [learningRate, setLearningRate] = createSignal(0.01)
     const [nSamples, setNSamples] = createSignal(100)
     const [noise, setNoise] = createSignal(0.15)
 
     // Training data as jax arrays
     let X: np.Array | null = null
     let y: np.Array | null = null
+    let optState: OptState | null = null
 
     onMount(async () => {
         const dev = await initJax()
@@ -38,6 +41,9 @@ export function TwoMoonDemo() {
         X?.dispose()
         y?.dispose()
 
+        // Cleanup old params using tree.dispose
+        tree.dispose(params())
+
         const dataset = normalizeForVisualization(
             generateTwoMoons(nSamples(), noise())
         )
@@ -49,6 +55,7 @@ export function TwoMoonDemo() {
 
         // Initialize new network
         const newParams = initParams(16)
+        optState = initOptimizer(newParams, learningRate())
         setParams(newParams)
         setEpoch(0)
         setLoss(null)
@@ -56,15 +63,20 @@ export function TwoMoonDemo() {
     }
 
     const runTraining = async () => {
-        if (!params() || !X || !y || isTraining()) return
+        if (!params() || !X || !y || !optState || isTraining()) return
 
         setIsTraining(true)
-        const totalEpochs = 100
+        const totalEpochs = 500
 
         for (let i = 0; i < totalEpochs; i++) {
             const currentParams = params()!
-            const result = trainStep(currentParams, X, y, learningRate())
+            const result = trainStep(currentParams, optState, X.ref, y.ref, learningRate())
 
+            // Note: applyUpdates inside trainStep already consumed currentParams,
+            // so we don't need to dispose it manually
+
+            // Update state
+            optState = result.optState
             setParams(result.params)
             setLoss(result.loss)
             setEpoch(e => e + 1)

@@ -5,6 +5,7 @@
       "name": "tanh-xyz",
       "dependencies": {
         "@jax-js/jax": "^0.1.7",
+        "@jax-js/optax": "^0.1.2",
         "@tailwindcss/vite": "^4.0.6",
         "@tanstack/router-plugin": "^1.133.21",
         "@tanstack/solid-router": "^1.133.20",
@@ -196,6 +197,8 @@
     "@img/sharp-win32-x64": ["@img/sharp-win32-x64@0.34.5", "", { "os": "win32", "cpu": "x64" }, "sha512-+29YMsqY2/9eFEiW93eqWnuLcWcufowXewwSNIT6UwZdUUCrM3oFjMWH/Z6/TMmb4hlFenmfAVbpWeup2jryCw=="],
 
     "@jax-js/jax": ["@jax-js/jax@0.1.7", "", {}, "sha512-ZxIgUgUIO26KqWg2VE3W1UQsYFawZSuxxZtA84tI3M6sw/+0qzZG8ElWLtPi5DPixuUi1MtPE1jEA8FbU1ph+A=="],
+
+    "@jax-js/optax": ["@jax-js/optax@0.1.2", "", { "dependencies": { "@jax-js/jax": "^0.1.4" } }, "sha512-pJ/N0FIlrZTRALTc2rlAFSDEn/wBXbpaiqpaw2a+vwH+Br/fCX5dZ1ZckZFTG+iTPOm+oZ/xA+cjaocu47+0HA=="],
 
     "@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.13", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA=="],
 

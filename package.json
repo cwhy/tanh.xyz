@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@jax-js/jax": "^0.1.7",
+    "@jax-js/optax": "^0.1.2",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/router-plugin": "^1.133.21",
     "@tanstack/solid-router": "^1.133.20",
