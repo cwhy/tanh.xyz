@@ -25,7 +25,7 @@ export const Route = createRootRouteWithContext()({
 
 function RootComponent() {
   return (
-    <html data-theme="dark">
+    <html data-theme="light">
       <head>
         <HydrationScript />
       </head>

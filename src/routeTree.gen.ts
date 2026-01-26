@@ -10,33 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DemosTwoMoonRouteImport } from './routes/demos/two-moon'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemosTwoMoonRoute = DemosTwoMoonRouteImport.update({
+  id: '/demos/two-moon',
+  path: '/demos/two-moon',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/demos/two-moon': typeof DemosTwoMoonRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/demos/two-moon': typeof DemosTwoMoonRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/demos/two-moon': typeof DemosTwoMoonRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/demos/two-moon'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/demos/two-moon'
+  id: '__root__' | '/' | '/demos/two-moon'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DemosTwoMoonRoute: typeof DemosTwoMoonRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -48,11 +58,19 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demos/two-moon': {
+      id: '/demos/two-moon'
+      path: '/demos/two-moon'
+      fullPath: '/demos/two-moon'
+      preLoaderRoute: typeof DemosTwoMoonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DemosTwoMoonRoute: DemosTwoMoonRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

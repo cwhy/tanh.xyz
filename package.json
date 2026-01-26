@@ -7,7 +7,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "start": "node .output/server/index.mjs"
+    "start": "node .output/server/index.mjs",
+    "deploy": "bun run build && bunx wrangler --cwd .output/ deploy"
   },
   "dependencies": {
     "@jax-js/jax": "^0.1.7",
