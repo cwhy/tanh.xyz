@@ -1,15 +1,5 @@
-import { createSignal, onMount, For, Show } from 'solid-js'
-import { generateTwoMoons, normalizeForVisualization, type DataPoint } from '../../lib/datasets/two-moons'
-import {
-    initJax,
-    initParams,
-    initOptimizer,
-    trainStep,
-    predictGrid,
-    type NetworkParams,
-    type OptState,
-} from './models'
-import { numpy as np, tree } from '@jax-js/jax'
+import { onMount, For, Show } from 'solid-js'
+import { createTrainingStore } from './training-store'
 
 export function TwoMoonPage() {
     return (
@@ -48,145 +38,19 @@ export function TwoMoonPage() {
 }
 
 export function TwoMoonDemo() {
-    const [isLoading, setIsLoading] = createSignal(true)
-    const [device, setDevice] = createSignal<string>('')
-    const [points, setPoints] = createSignal<DataPoint[]>([])
-    const [params, setParams] = createSignal<NetworkParams | null>(null)
-    const [decisionGrid, setDecisionGrid] = createSignal<number[][] | null>(null)
-    const [epoch, setEpoch] = createSignal(0)
-    const [loss, setLoss] = createSignal<number | null>(null)
-    const [isTraining, setIsTraining] = createSignal(false)
-    const [learningRate, setLearningRate] = createSignal(0.01)
-    const [optimizerType, setOptimizerType] = createSignal<'adam' | 'sgd'>('adam')
-    const [epochsPerRound, setEpochsPerRound] = createSignal(500)
-    const [nSamples, setNSamples] = createSignal(100)
-    const [noise, setNoise] = createSignal(0.15)
+    const store = createTrainingStore({ hiddenSize: 16, gridResolution: 40 })
+    const {
+        state,
+        learningRate, setLearningRate,
+        optimizerType, setOptimizerType,
+        epochsPerRound, setEpochsPerRound,
+        nSamples, setNSamples,
+        noise, setNoise,
+        batchSize, setBatchSize,
+        generateData, reinitOptimizer, runTraining,
+    } = store
 
-    const [batchSize, setBatchSize] = createSignal(200)
-
-    // Training data
-    let X: np.Array | null = null
-    let y: np.Array | null = null
-    let trainingX: number[][] = []
-    let trainingY: number[] = []
-
-    // Training state
-    let optState: OptState | null = null
-
-    onMount(async () => {
-        const dev = await initJax()
-        setDevice(dev)
-        setIsLoading(false)
-        generateData()
-    })
-
-    const generateData = () => {
-        // Cleanup old data
-        X?.dispose()
-        y?.dispose()
-
-        // Cleanup old params using tree.dispose
-        tree.dispose(params())
-
-        const dataset = normalizeForVisualization(
-            generateTwoMoons(nSamples(), noise())
-        )
-        setPoints(dataset.points)
-
-        // Store raw normalized data for training (unpadded 0-1 range)
-        trainingX = dataset.X
-        trainingY = dataset.y
-
-        // Create jax arrays for training (optimization for full batch)
-        X = np.array(dataset.X)
-        y = np.array(dataset.y.map(v => [v]))
-
-        // Initialize new network
-        const newParams = initParams(16)
-        optState = initOptimizer(newParams, learningRate(), optimizerType())
-        setParams(newParams)
-        setEpoch(0)
-        setLoss(null)
-        setDecisionGrid(null)
-    }
-
-    const runTraining = async () => {
-        if (!params() || !optState || isTraining()) return
-
-        setIsTraining(true)
-        // Update batch size max when samples change
-        if (batchSize() > nSamples() * 2) {
-            setBatchSize(nSamples() * 2)
-        }
-
-        const totalEpochs = epochsPerRound()
-        const bs = batchSize()
-        const n = trainingX.length
-
-        for (let i = 0; i < totalEpochs; i++) {
-            // Shuffle indices
-            const indices = Array.from({ length: n }, (_, k) => k)
-            for (let k = n - 1; k > 0; k--) {
-                const j = Math.floor(Math.random() * (k + 1))
-                const temp = indices[k]
-                indices[k] = indices[j]
-                indices[j] = temp
-            }
-
-            let epochTotalLoss = 0
-            let epochSamples = 0
-
-            // Mini-batch training
-            for (let j = 0; j < n; j += bs) {
-                const currentBatchSize = Math.min(bs, n - j)
-
-                let X_batch: np.Array
-                let y_batch: np.Array
-
-                // Optimization: Use pre-loaded full dataset if doing full batch
-                if (bs >= n && X && y) {
-                    X_batch = X.ref
-                    y_batch = y.ref
-                } else {
-                    const batchIdx = indices.slice(j, j + bs)
-                    // Create tensors for this batch using trainingX/Y (0-1 range)
-                    X_batch = np.array(batchIdx.map(idx => trainingX[idx]))
-                    y_batch = np.array(batchIdx.map(idx => [trainingY[idx]]))
-                }
-
-                const currentParams = params()!
-                const result = trainStep(currentParams, optState!, X_batch, y_batch, learningRate(), optimizerType())
-
-                // Note: trainStep consumes X_batch and y_batch (via valueAndGrad),
-                // so we don't need to dispose them manually.
-
-                // Update state
-                optState = result.optState
-                setParams(result.params)
-
-                // Accumulate loss
-                epochTotalLoss += result.loss * currentBatchSize
-                epochSamples += currentBatchSize
-            }
-
-            setLoss(epochTotalLoss / epochSamples)
-
-            setEpoch(e => e + 1)
-
-            // Update decision boundary every 10 epochs
-            if ((i + 1) % 10 === 0 || i === totalEpochs - 1) {
-                // Ensure we call predictGrid with current params
-                // predictGrid creates its own temporary X, so it's safe
-                const grid = predictGrid(params()!, 40)
-                setDecisionGrid(grid)
-            }
-
-            // Allow UI to update
-            await new Promise(r => setTimeout(r, 0))
-        }
-
-        setIsTraining(false)
-    }
+    onMount(() => store.initialize())
 
     const canvasSize = 500
     const gridRes = 40
@@ -199,15 +63,15 @@ export function TwoMoonDemo() {
                     <h2 class="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                         Two-Moon Classification
                     </h2>
-                    <Show when={!isLoading()}>
+                    <Show when={!state.isLoading}>
                         <div class="badge badge-lg gap-2 bg-primary/20 border-primary/30 text-primary">
                             <div class="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                            {device()}
+                            {state.device}
                         </div>
                     </Show>
                 </div>
 
-                <Show when={!isLoading()} fallback={
+                <Show when={!state.isLoading} fallback={
                     <div class="flex flex-col items-center justify-center h-96 gap-4">
                         <span class="loading loading-spinner loading-lg text-primary" />
                         <span class="text-base-content/50">Initializing jax-js...</span>
@@ -224,8 +88,8 @@ export function TwoMoonDemo() {
                                     class="w-full h-auto"
                                 >
                                     {/* Decision boundary heatmap */}
-                                    <Show when={decisionGrid()}>
-                                        <For each={decisionGrid()!}>
+                                    <Show when={state.decisionGrid}>
+                                        <For each={state.decisionGrid!}>
                                             {(row, i) => (
                                                 <For each={row}>
                                                     {(prob, j) => {
@@ -248,7 +112,7 @@ export function TwoMoonDemo() {
                                     </Show>
 
                                     {/* Data points */}
-                                    <For each={points()}>
+                                    <For each={state.points}>
                                         {(point) => (
                                             <circle
                                                 cx={point.x * canvasSize}
@@ -283,12 +147,12 @@ export function TwoMoonDemo() {
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="stat bg-base-300/50 rounded-xl border border-base-content/5 p-4">
                                     <div class="stat-title text-xs opacity-60">Epoch</div>
-                                    <div class="stat-value text-3xl text-primary">{epoch()}</div>
+                                    <div class="stat-value text-3xl text-primary">{state.epoch}</div>
                                 </div>
                                 <div class="stat bg-base-300/50 rounded-xl border border-base-content/5 p-4">
                                     <div class="stat-title text-xs opacity-60">Loss</div>
                                     <div class="stat-value text-3xl text-secondary">
-                                        {loss() !== null ? loss()!.toFixed(4) : '—'}
+                                        {state.loss !== null ? state.loss.toFixed(4) : '—'}
                                     </div>
                                 </div>
                             </div>
@@ -308,11 +172,9 @@ export function TwoMoonDemo() {
                                             checked={optimizerType() === 'adam'}
                                             onClick={() => {
                                                 setOptimizerType('adam')
-                                                if (params()) {
-                                                    optState = initOptimizer(params()!, learningRate(), 'adam')
-                                                }
+                                                reinitOptimizer()
                                             }}
-                                            disabled={isTraining()}
+                                            disabled={state.isTraining}
                                         />
                                         <input
                                             class="join-item btn btn-sm btn-outline px-6"
@@ -322,11 +184,9 @@ export function TwoMoonDemo() {
                                             checked={optimizerType() === 'sgd'}
                                             onClick={() => {
                                                 setOptimizerType('sgd')
-                                                if (params()) {
-                                                    optState = initOptimizer(params()!, learningRate(), 'sgd')
-                                                }
+                                                reinitOptimizer()
                                             }}
-                                            disabled={isTraining()}
+                                            disabled={state.isTraining}
                                         />
                                     </div>
                                 </div>
@@ -344,7 +204,7 @@ export function TwoMoonDemo() {
                                         value={learningRate()}
                                         onInput={(e) => setLearningRate(parseFloat(e.currentTarget.value))}
                                         class="range range-primary range-sm"
-                                        disabled={isTraining()}
+                                        disabled={state.isTraining}
                                     />
                                     <div class="flex justify-between text-xs text-base-content/40 mt-1">
                                         <span>0.001</span>
@@ -365,7 +225,7 @@ export function TwoMoonDemo() {
                                         value={batchSize()}
                                         onInput={(e) => setBatchSize(parseInt(e.currentTarget.value))}
                                         class="range range-secondary range-sm"
-                                        disabled={isTraining()}
+                                        disabled={state.isTraining}
                                     />
                                     <div class="flex justify-between text-xs text-base-content/40 mt-1">
                                         <span>1</span>
@@ -386,7 +246,7 @@ export function TwoMoonDemo() {
                                         value={nSamples()}
                                         onInput={(e) => setNSamples(parseInt(e.currentTarget.value))}
                                         class="range range-secondary range-sm"
-                                        disabled={isTraining()}
+                                        disabled={state.isTraining}
                                     />
                                     <div class="flex justify-between text-xs text-base-content/40 mt-1">
                                         <span>20</span>
@@ -407,7 +267,7 @@ export function TwoMoonDemo() {
                                         value={noise()}
                                         onInput={(e) => setNoise(parseFloat(e.currentTarget.value))}
                                         class="range range-accent range-sm"
-                                        disabled={isTraining()}
+                                        disabled={state.isTraining}
                                     />
                                     <div class="flex justify-between text-xs text-base-content/40 mt-1">
                                         <span>0.00</span>
@@ -419,18 +279,17 @@ export function TwoMoonDemo() {
                             {/* Buttons */}
                             <div class="flex gap-3 pt-2">
                                 <div
-                                    class={`btn btn-primary flex-1 shadow-lg shadow-primary/20 flex flex-row items-center gap-2 ${isTraining() ? 'cursor-not-allowed opacity-50' : ''}`}
+                                    class={`btn btn-primary flex-1 shadow-lg shadow-primary/20 flex flex-row items-center gap-2 ${state.isTraining ? 'cursor-not-allowed opacity-50' : ''}`}
                                     onClick={(e) => {
-                                        // Use e.target to verify we didn't click the input
                                         const target = e.target as HTMLElement;
-                                        if (target.tagName !== 'INPUT' && !isTraining()) {
+                                        if (target.tagName !== 'INPUT' && !state.isTraining) {
                                             runTraining();
                                         }
                                     }}
                                     role="button"
                                     tabindex="0"
                                 >
-                                    <Show when={isTraining()} fallback={
+                                    <Show when={state.isTraining} fallback={
                                         <>
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -456,7 +315,7 @@ export function TwoMoonDemo() {
                                 <button
                                     class="btn btn-outline flex-1"
                                     onClick={generateData}
-                                    disabled={isTraining()}
+                                    disabled={state.isTraining}
                                 >
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
