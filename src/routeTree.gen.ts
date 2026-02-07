@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemosTwoMoonRouteImport } from './routes/demos/two-moon'
+import { Route as DemosNkClusteringRouteImport } from './routes/demos/nk-clustering'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,30 +23,39 @@ const DemosTwoMoonRoute = DemosTwoMoonRouteImport.update({
   path: '/demos/two-moon',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemosNkClusteringRoute = DemosNkClusteringRouteImport.update({
+  id: '/demos/nk-clustering',
+  path: '/demos/nk-clustering',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/demos/two-moon'
+  fullPaths: '/' | '/demos/nk-clustering' | '/demos/two-moon'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demos/two-moon'
-  id: '__root__' | '/' | '/demos/two-moon'
+  to: '/' | '/demos/nk-clustering' | '/demos/two-moon'
+  id: '__root__' | '/' | '/demos/nk-clustering' | '/demos/two-moon'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DemosNkClusteringRoute: typeof DemosNkClusteringRoute
   DemosTwoMoonRoute: typeof DemosTwoMoonRoute
 }
 
@@ -65,11 +75,19 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof DemosTwoMoonRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demos/nk-clustering': {
+      id: '/demos/nk-clustering'
+      path: '/demos/nk-clustering'
+      fullPath: '/demos/nk-clustering'
+      preLoaderRoute: typeof DemosNkClusteringRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DemosNkClusteringRoute: DemosNkClusteringRoute,
   DemosTwoMoonRoute: DemosTwoMoonRoute,
 }
 export const routeTree = rootRouteImport

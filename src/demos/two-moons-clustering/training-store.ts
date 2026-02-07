@@ -5,7 +5,7 @@
 
 import { createSignal } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import { generateTwoMoons, normalizeForVisualization, type DataPoint } from '../../lib/datasets/two-moons'
+import { generateTwoMoons, normalizeForVisualization, type DataPoint } from '../../lib/datasets/jax/two-moons'
 import {
     initJax,
     initParams,

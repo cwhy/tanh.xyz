@@ -23,6 +23,14 @@ export const Route = createRootRouteWithContext()({
       { name: 'description', content: 'Interactive neural network demo running in your browser with WebGPU' },
     ],
   }),
+  notFoundComponent: () => (
+    <main class="min-h-screen flex items-center justify-center p-6">
+      <div class="text-center space-y-3">
+        <h1 class="text-3xl font-bold">Page Not Found</h1>
+        <a href="/" class="link link-primary">Back to Demos</a>
+      </div>
+    </main>
+  ),
   shellComponent: RootComponent,
 })
 

@@ -33,3 +33,6 @@ const additionalInstructions = `
 11. Follow both Solid.js and Tailwind naming conventions
 12. Use JIT (Just-In-Time) mode for faster development
     `;
+
+// jax-js tips
+read this if you have doubts regarding ref counting for jax-js https://raw.githubusercontent.com/ekzhang/jax-js/refs/heads/main/README.md
