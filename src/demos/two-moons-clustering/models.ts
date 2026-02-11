@@ -78,30 +78,30 @@ export function loss(params: NetworkParams, X: np.Array, y: np.Array): np.Array 
 /**
  * Single training step using the model's loss function
  */
-export function trainStep(
+export async function trainStep(
     params: NetworkParams,
     optState: OptState,
     X: np.Array,
     y: np.Array,
     learningRate: number,
     optimizerType: 'adam' | 'sgd' = 'adam'
-): { params: NetworkParams; optState: OptState; loss: number } {
+): Promise<{ params: NetworkParams; optState: OptState; loss: number }> {
     return genericTrainStep(params, optState, X, y, loss, learningRate, optimizerType)
 }
 
 /**
  * Predict class for a batch of points
  */
-export function predictBatch(params: NetworkParams, X: np.Array): number[] {
+export async function predictBatch(params: NetworkParams, X: np.Array): Promise<number[]> {
     const preds = predict(tree.ref(params), X.ref)
-    const result = preds.js() as number[][]
+    const result = await preds.jsAsync() as number[][]
     return result.flat()
 }
 
 /**
  * Generate decision boundary predictions for visualization grid
  */
-export function predictGrid(params: NetworkParams, resolution: number = 50): number[][] {
+export async function predictGrid(params: NetworkParams, resolution: number = 50): Promise<number[][]> {
     const grid: number[][] = []
 
     // Create grid of points [0, 1] x [0, 1]
@@ -114,7 +114,7 @@ export function predictGrid(params: NetworkParams, resolution: number = 50): num
     }
 
     const X = np.array(points)
-    const preds = predictBatch(params, X)
+    const preds = await predictBatch(params, X)
     X.dispose()
 
     // Reshape to grid

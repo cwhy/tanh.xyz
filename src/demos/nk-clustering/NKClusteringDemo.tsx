@@ -1,6 +1,7 @@
-import { For, Show, createSignal } from 'solid-js'
+import { For, Show, createSignal, onCleanup, onMount } from 'solid-js'
 import { createNKClusteringStore } from './store'
 import type { BasicDatasetDistribution } from '../../lib/datasets/basic'
+import type { CenterType } from './algorithm'
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
 import { ConfigRadioGroup } from '../../components/ui-parts/configs/ConfigRadioGroup'
 import { SingleStageLayout } from '../../components/demo-layouts/single-stage'
@@ -13,6 +14,11 @@ const distributionOptions: Array<{ label: string; value: BasicDatasetDistributio
     { label: 'Uniform', value: 'uniform' },
 ]
 
+const centerTypeOptions: Array<{ label: string; value: CenterType }> = [
+    { label: 'Medoid', value: 'medoid' },
+    { label: 'Centroid', value: 'centroid' },
+]
+
 export function NKClusteringPage() {
     return <NKClusteringDemo />
 }
@@ -23,12 +29,39 @@ export function NKClusteringDemo() {
     const [distribution, setDistribution] = createSignal<BasicDatasetDistribution>('two-moons')
 
     const canvasSize = 760
+    const [plotSize, setPlotSize] = createSignal(canvasSize)
+    let stageCanvasContainerRef: HTMLDivElement | undefined
+
+    onMount(() => {
+        const updatePlotSize = () => {
+            if (!stageCanvasContainerRef) return
+            const { clientWidth, clientHeight } = stageCanvasContainerRef
+            const size = Math.max(1, Math.floor(Math.min(clientWidth, clientHeight)))
+            setPlotSize(size)
+        }
+
+        updatePlotSize()
+
+        const resizeObserver = new ResizeObserver(updatePlotSize)
+        resizeObserver.observe(stageCanvasContainerRef!)
+
+        onCleanup(() => {
+            resizeObserver.disconnect()
+        })
+    })
 
     function handleCanvasClick(e: MouseEvent) {
         const svg = e.currentTarget as SVGSVGElement
-        const rect = svg.getBoundingClientRect()
-        const x = (e.clientX - rect.left) / rect.width
-        const y = 1 - (e.clientY - rect.top) / rect.height
+        const ctm = svg.getScreenCTM()
+        if (!ctm) return
+
+        const pt = svg.createSVGPoint()
+        pt.x = e.clientX
+        pt.y = e.clientY
+        const local = pt.matrixTransform(ctm.inverse())
+
+        const x = Math.max(0, Math.min(1, local.x / canvasSize))
+        const y = Math.max(0, Math.min(1, 1 - local.y / canvasSize))
         store.addSinglePoint(x, y)
     }
 
@@ -44,6 +77,13 @@ export function NKClusteringDemo() {
                     <div class="stat-value text-2xl text-secondary">{store.clusters().length}</div>
                 </div>
             </div>
+
+            <Show when={store.cancelReplay() && store.replayQueueLength() > 0}>
+                <div class="stat bg-warning/10 rounded-xl border border-warning/20 p-3">
+                    <div class="stat-title text-xs opacity-60">Replay Queue</div>
+                    <div class="stat-value text-xl text-warning">{store.replayQueueLength()}</div>
+                </div>
+            </Show>
 
             <ConfigSlider
                 label="N (Max Cluster Size)"
@@ -92,7 +132,7 @@ export function NKClusteringDemo() {
                 label="Point Count"
                 value={pointCount()}
                 min={20}
-                max={300}
+                max={600}
                 step={10}
                 onChange={(value) => setPointCount(Math.round(value))}
                 disabled={store.isStreaming()}
@@ -108,6 +148,31 @@ export function NKClusteringDemo() {
                 onChange={setDistribution}
                 disabled={store.isStreaming()}
             />
+
+            <ConfigRadioGroup
+                label="Center Type"
+                name="centerType"
+                value={store.centerType()}
+                options={centerTypeOptions}
+                onChange={store.setCenterType}
+                disabled={store.isStreaming()}
+            />
+
+            <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-3">
+                    <input
+                        type="checkbox"
+                        class="toggle toggle-warning"
+                        checked={store.cancelReplay()}
+                        onChange={(e) => store.setCancelReplay(e.currentTarget.checked)}
+                        disabled={store.isStreaming()}
+                    />
+                    <span class="label-text">Defer Evicted Points</span>
+                </label>
+                <span class="text-xs text-base-content/50 pl-1">
+                    When on, evicted points replay in additional rounds until none remain
+                </span>
+            </div>
 
             <div class="flex flex-col gap-3 pt-1">
                 <button
@@ -136,7 +201,7 @@ export function NKClusteringDemo() {
                         <button
                             class="btn btn-success flex-1"
                             onClick={() => store.startStreaming()}
-                            disabled={store.currentPointIndex() >= store.pendingPoints().length}
+                            disabled={store.currentPointIndex() >= store.pendingPoints().length && store.replayQueueLength() === 0}
                         >
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -149,7 +214,7 @@ export function NKClusteringDemo() {
                     <button
                         class="btn btn-outline flex-1"
                         onClick={() => store.stepOnce()}
-                        disabled={store.isStreaming() || store.currentPointIndex() >= store.pendingPoints().length}
+                        disabled={store.isStreaming() || (store.currentPointIndex() >= store.pendingPoints().length && store.replayQueueLength() === 0)}
                     >
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
@@ -171,22 +236,17 @@ export function NKClusteringDemo() {
     const StagePanel = () => (
         <div class="card h-full bg-base-200/60 backdrop-blur-xl shadow-2xl border border-base-content/5">
             <div class="card-body h-full min-h-0 p-4 md:p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-2xl font-bold text-base-content">
-                        NK Clustering Demo
-                    </h2>
-                    <div class="badge badge-lg gap-2 bg-primary/20 border-primary/30 text-primary">
-                        <div class="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                        {store.clusters().length} clusters
-                    </div>
-                </div>
-
-                <div class="relative min-h-0 grow rounded-2xl overflow-hidden border border-base-content/10 bg-base-300/50">
+                <div
+                    ref={stageCanvasContainerRef}
+                    class="relative min-h-0 grow rounded-2xl overflow-hidden border border-base-content/10 bg-base-300/50 flex items-center justify-center"
+                    style={{ 'min-height': '400px' }}
+                >
                     <svg
-                        width={canvasSize}
-                        height={canvasSize}
+                        width={plotSize()}
+                        height={plotSize()}
                         viewBox={`0 0 ${canvasSize} ${canvasSize}`}
-                        class="w-full h-full cursor-crosshair"
+                        preserveAspectRatio="xMidYMid meet"
+                        class="block cursor-crosshair"
                         onClick={handleCanvasClick}
                     >
                         <defs>
@@ -195,6 +255,18 @@ export function NKClusteringDemo() {
                             </pattern>
                         </defs>
                         <rect width="100%" height="100%" fill="url(#grid)" />
+
+                        <For each={store.pendingPoints().slice(store.currentPointIndex())}>
+                            {(p) => (
+                                <circle
+                                    cx={p.x * canvasSize}
+                                    cy={(1 - p.y) * canvasSize}
+                                    r={3}
+                                    fill="rgba(0,0,0,0.1)"
+                                    style={{ 'pointer-events': 'none' }}
+                                />
+                            )}
+                        </For>
 
                         <For each={store.points()}>
                             {(p) => (
@@ -206,6 +278,16 @@ export function NKClusteringDemo() {
                                             r={14}
                                             fill="none"
                                             stroke={p.medoidColor}
+                                            stroke-width={3}
+                                        />
+                                    </Show>
+                                    <Show when={p.point.id === store.lastAddedPointId()}>
+                                        <circle
+                                            cx={p.point.x * canvasSize}
+                                            cy={(1 - p.point.y) * canvasSize}
+                                            r={12}
+                                            fill="none"
+                                            stroke="#10b981"
                                             stroke-width={3}
                                         />
                                     </Show>
@@ -230,33 +312,40 @@ export function NKClusteringDemo() {
                                 </g>
                             )}
                         </For>
-
-                        <For each={store.pendingPoints().slice(store.currentPointIndex())}>
-                            {(p) => (
-                                <circle
-                                    cx={p.x * canvasSize}
-                                    cy={(1 - p.y) * canvasSize}
-                                    r={3}
-                                    fill="rgba(0,0,0,0.1)"
-                                />
-                            )}
-                        </For>
                     </svg>
                 </div>
 
                 <Show when={store.pendingPoints().length > 0}>
-                    <div>
-                        <div class="flex justify-between text-xs text-base-content/60 mb-1">
-                            <span>Progress</span>
-                            <span>
-                                {store.currentPointIndex()} / {store.pendingPoints().length}
-                            </span>
+                    <div class="space-y-2">
+                        <div>
+                            <div class="flex justify-between text-xs text-base-content/60 mb-1">
+                                <span>Progress</span>
+                                <span>
+                                    {store.currentPointIndex()} / {store.pendingPoints().length}
+                                </span>
+                            </div>
+                            <progress
+                                class="progress progress-primary w-full"
+                                value={store.currentPointIndex()}
+                                max={store.pendingPoints().length}
+                            />
                         </div>
-                        <progress
-                            class="progress progress-primary w-full"
-                            value={store.currentPointIndex()}
-                            max={store.pendingPoints().length}
-                        />
+                        <Show when={store.cancelReplay() && (store.replayQueueLength() > 0 || store.currentPointIndex() >= store.pendingPoints().length)}>
+                            <div>
+                                <div class="flex justify-between text-xs text-base-content/60 mb-1">
+                                    <span>Deferred Points</span>
+                                    <span class={store.replayQueueLength() > 0 ? 'text-warning' : 'text-success'}>
+                                        {store.replayQueueLength() > 0 ? `${store.replayQueueLength()} remaining` : 'done'}
+                                    </span>
+                                </div>
+                                <div class="h-2 w-full bg-base-300 rounded-full overflow-hidden">
+                                    <div
+                                        class={`h-full transition-all duration-300 ${store.replayQueueLength() > 0 ? 'bg-warning' : 'bg-success'}`}
+                                        style={{ width: store.replayQueueLength() > 0 ? '100%' : '0%' }}
+                                    />
+                                </div>
+                            </div>
+                        </Show>
                     </div>
                 </Show>
 

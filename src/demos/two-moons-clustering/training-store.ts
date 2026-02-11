@@ -173,7 +173,7 @@ export function createTrainingStore(config: TrainingConfig = {}) {
                     y_batch = np.array(batchIdx.map(idx => [trainingY[idx]]))
                 }
 
-                const result = trainStep(
+                const result = await trainStep(
                     state.params!,
                     optState!,
                     X_batch,
@@ -196,7 +196,7 @@ export function createTrainingStore(config: TrainingConfig = {}) {
 
             // Update decision boundary periodically
             if ((i + 1) % 10 === 0 || i === totalEpochs - 1) {
-                const grid = predictGrid(state.params!, gridResolution)
+                const grid = await predictGrid(state.params!, gridResolution)
                 setState({ decisionGrid: grid })
             }
 

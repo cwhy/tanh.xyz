@@ -48,7 +48,7 @@ export function initOptimizer<P extends Record<string, np.Array>>(
 /**
  * Generic training step that works with any loss function
  */
-export function trainStep<P extends Record<string, np.Array>>(
+export async function trainStep<P extends Record<string, np.Array>>(
     params: P,
     optState: OptState,
     X: np.Array,
@@ -56,15 +56,12 @@ export function trainStep<P extends Record<string, np.Array>>(
     lossFn: (params: P, X: np.Array, y: np.Array) => np.Array,
     learningRate: number,
     optimizerType: 'adam' | 'sgd' = 'adam'
-): { params: P; optState: OptState; loss: number } {
+): Promise<{ params: P; optState: OptState; loss: number }> {
     // Compute loss and gradients using valueAndGrad
-    const [lossVal, lossGrad] = valueAndGrad(lossFn)(
-        tree.ref(params),
-        X,
-        y
-    ) as [np.Array, P]
+    // @ts-expect-error — P satisfies MappedJsTree<P, Array, ArrayLike> but TS can't verify conditional types on generics
+    const [lossVal, lossGrad] = valueAndGrad(lossFn)(tree.ref(params), X, y) as [np.Array, P]
 
-    const lossValue = lossVal.js() as number
+    const lossValue = await lossVal.jsAsync() as number
 
     // Apply optimizer updates
     const solver = optimizerType === 'adam' ? adam(learningRate) : sgd(learningRate)

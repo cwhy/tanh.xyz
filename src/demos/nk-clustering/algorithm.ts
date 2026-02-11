@@ -22,10 +22,13 @@ export interface Cluster {
     cMin: number  // Distance from medoid to furthest point
 }
 
+export type CenterType = 'medoid' | 'centroid'
+
 export interface NKClusteringState {
     clusters: Cluster[]
     n: number  // Max cluster size
     k: number  // K-th neighbor for medoid calculation
+    centerType: CenterType  // How to calculate cluster center
     nextPointId: number
     nextClusterId: number
 }
@@ -97,6 +100,44 @@ export function calculateMedoid(points: Point[], k: number): Point | null {
 }
 
 /**
+ * Calculate the centroid of a cluster
+ * Returns the point closest to the geometric center
+ */
+export function calculateCentroid(points: Point[]): Point | null {
+    if (points.length === 0) return null
+    if (points.length === 1) return points[0]
+
+    // Calculate geometric center
+    const centerX = points.reduce((sum, p) => sum + p.x, 0) / points.length
+    const centerY = points.reduce((sum, p) => sum + p.y, 0) / points.length
+    const center: Point = { x: centerX, y: centerY, id: -1 }
+
+    // Find the point closest to the geometric center
+    let bestPoint = points[0]
+    let bestDist = Infinity
+
+    for (const candidate of points) {
+        const dist = distance(candidate, center)
+        if (dist < bestDist) {
+            bestDist = dist
+            bestPoint = candidate
+        }
+    }
+
+    return bestPoint
+}
+
+/**
+ * Calculate the cluster center based on the center type
+ */
+export function calculateCenter(points: Point[], k: number, centerType: CenterType): Point | null {
+    if (centerType === 'centroid') {
+        return calculateCentroid(points)
+    }
+    return calculateMedoid(points, k)
+}
+
+/**
  * Calculate cMin: distance from medoid to the furthest point
  */
 export function calculateCMin(medoid: Point, points: Point[]): number {
@@ -107,8 +148,8 @@ export function calculateCMin(medoid: Point, points: Point[]): number {
 /**
  * Update a cluster's medoid and cMin
  */
-function updateClusterMetrics(cluster: Cluster, k: number): void {
-    const medoid = calculateMedoid(cluster.points, k)
+function updateClusterMetrics(cluster: Cluster, k: number, centerType: CenterType): void {
+    const medoid = calculateCenter(cluster.points, k, centerType)
     cluster.medoidId = medoid?.id ?? null
     if (medoid) {
         cluster.cMin = calculateCMin(medoid, cluster.points)
@@ -126,7 +167,7 @@ export function getClusterMedoid(cluster: Cluster): Point | null {
 /**
  * Create initial state for NK clustering
  */
-export function createNKClusteringState(n: number, k: number): NKClusteringState {
+export function createNKClusteringState(n: number, k: number, centerType: CenterType = 'medoid'): NKClusteringState {
     if (k >= n) {
         throw new Error(`K (${k}) must be less than N (${n})`)
     }
@@ -134,6 +175,7 @@ export function createNKClusteringState(n: number, k: number): NKClusteringState
         clusters: [],
         n,
         k,
+        centerType,
         nextPointId: 0,
         nextClusterId: 0,
     }
@@ -152,11 +194,13 @@ export interface AddPointResult {
 /**
  * Add a new point to the clustering
  * Returns information about where the point ended up
+ * @param deferEviction If true, evicted points are not immediately re-placed (returned for caller to handle)
  */
 export function addPoint(
     state: NKClusteringState,
     x: number,
-    y: number
+    y: number,
+    deferEviction: boolean = false
 ): AddPointResult {
     const point: Point = { x, y, id: state.nextPointId++ }
 
@@ -173,7 +217,31 @@ export function addPoint(
     }
 
     // Try to place the point, with possible cascading evictions
-    return tryPlacePoint(state, point, new Set())
+    return tryPlacePoint(state, point, new Set(), deferEviction)
+}
+
+/**
+ * Add an existing point (e.g., from replay queue) to the clustering
+ */
+export function addExistingPoint(
+    state: NKClusteringState,
+    point: Point,
+    deferEviction: boolean = false
+): AddPointResult {
+    // If no clusters exist, create the first one
+    if (state.clusters.length === 0) {
+        const cluster: Cluster = {
+            id: state.nextClusterId++,
+            points: [point],
+            medoidId: point.id,
+            cMin: 0,
+        }
+        state.clusters.push(cluster)
+        return { point, clusterId: cluster.id, evicted: null, newClusterCreated: true }
+    }
+
+    // Try to place the point, with possible cascading evictions
+    return tryPlacePoint(state, point, new Set(), deferEviction)
 }
 
 /**
@@ -182,7 +250,8 @@ export function addPoint(
 function tryPlacePoint(
     state: NKClusteringState,
     point: Point,
-    triedClusters: Set<number>
+    triedClusters: Set<number>,
+    deferEviction: boolean = false
 ): AddPointResult {
     // Get clusters sorted by distance to their medoids
     const clustersWithDist = state.clusters
@@ -199,7 +268,7 @@ function tryPlacePoint(
         // Case 1: Cluster is not full - just add
         if (cluster.points.length < state.n) {
             cluster.points.push(point)
-            updateClusterMetrics(cluster, state.k)
+            updateClusterMetrics(cluster, state.k, state.centerType)
             return { point, clusterId: cluster.id, evicted: null, newClusterCreated: false }
         }
 
@@ -222,11 +291,21 @@ function tryPlacePoint(
             // Swap: add new point, remove evicted
             cluster.points = cluster.points.filter(p => p.id !== evictedPoint.id)
             cluster.points.push(point)
-            updateClusterMetrics(cluster, state.k)
+            updateClusterMetrics(cluster, state.k, state.centerType)
+
+            // If deferring eviction, return evicted point for caller to handle later
+            if (deferEviction) {
+                return {
+                    point,
+                    clusterId: cluster.id,
+                    evicted: evictedPoint,
+                    newClusterCreated: false,
+                }
+            }
 
             // Try to place the evicted point elsewhere
             triedClusters.add(cluster.id)
-            const evictedResult = tryPlacePoint(state, evictedPoint, triedClusters)
+            const evictedResult = tryPlacePoint(state, evictedPoint, triedClusters, false)
 
             return {
                 point,
