@@ -31,11 +31,10 @@ function HomePage() {
                 href="https://github.com/ekzhang/jax-js"
                 target="_blank"
                 class="link link-hover"
-                style={{ "color": "#ff4d4d" }}
+                style={{ "color": "#2d2d2d" }}
               >
                 jax-js
               </a>
-              {' '}and WebGPU
             </p>
 
             {/* Decorative arrow pointing to demos */}
@@ -61,12 +60,8 @@ function HomePage() {
         </header>
 
         {/* Demos Grid */}
-        <main class="container mx-auto px-6 pb-20 max-w-5xl">
-          <h2 class="text-3xl md:text-4xl font-bold mb-8 text-center" style={{ "font-family": "'Kalam', cursive", "color": "#2d2d2d" }}>
-            Explore Demos
-          </h2>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <main class="mx-auto w-full px-6 pb-20 lg:w-[85%]">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <DemoCard
               title="Two-Moon Classification"
               description="Train a neural network to classify two interleaving half-moon shapes. Watch the decision boundary evolve in real-time as the network learns."
@@ -93,10 +88,10 @@ function HomePage() {
             />
 
             <DemoCard
-              title="MNIST Digit Recognition"
-              description="Train a convolutional neural network to recognize handwritten digits. Draw your own digits and see the network classify them."
-              href="/demos/mnist"
-              status="coming-soon"
+              title="MNIST with Gradient Norm"
+              description="Online MNIST training with seeded reproducibility, live train/test curves, per-digit recall, and top gradient-norm samples."
+              href="/demos/mnist-training"
+              status="ready"
               icon={
                 <svg class="w-6 h-6 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />

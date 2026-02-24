@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemosTwoMoonRouteImport } from './routes/demos/two-moon'
 import { Route as DemosNkClusteringRouteImport } from './routes/demos/nk-clustering'
+import { Route as DemosMnistTrainingRouteImport } from './routes/demos/mnist-training'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,33 +29,51 @@ const DemosNkClusteringRoute = DemosNkClusteringRouteImport.update({
   path: '/demos/nk-clustering',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemosMnistTrainingRoute = DemosMnistTrainingRouteImport.update({
+  id: '/demos/mnist-training',
+  path: '/demos/mnist-training',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/demos/mnist-training': typeof DemosMnistTrainingRoute
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/demos/mnist-training': typeof DemosMnistTrainingRoute
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/demos/mnist-training': typeof DemosMnistTrainingRoute
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/demos/nk-clustering' | '/demos/two-moon'
+  fullPaths:
+    | '/'
+    | '/demos/mnist-training'
+    | '/demos/nk-clustering'
+    | '/demos/two-moon'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demos/nk-clustering' | '/demos/two-moon'
-  id: '__root__' | '/' | '/demos/nk-clustering' | '/demos/two-moon'
+  to: '/' | '/demos/mnist-training' | '/demos/nk-clustering' | '/demos/two-moon'
+  id:
+    | '__root__'
+    | '/'
+    | '/demos/mnist-training'
+    | '/demos/nk-clustering'
+    | '/demos/two-moon'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DemosMnistTrainingRoute: typeof DemosMnistTrainingRoute
   DemosNkClusteringRoute: typeof DemosNkClusteringRoute
   DemosTwoMoonRoute: typeof DemosTwoMoonRoute
 }
@@ -82,11 +101,19 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof DemosNkClusteringRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demos/mnist-training': {
+      id: '/demos/mnist-training'
+      path: '/demos/mnist-training'
+      fullPath: '/demos/mnist-training'
+      preLoaderRoute: typeof DemosMnistTrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DemosMnistTrainingRoute: DemosMnistTrainingRoute,
   DemosNkClusteringRoute: DemosNkClusteringRoute,
   DemosTwoMoonRoute: DemosTwoMoonRoute,
 }
