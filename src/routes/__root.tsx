@@ -31,6 +31,19 @@ export const Route = createRootRouteWithContext()({
       </div>
     </main>
   ),
+  errorComponent: (props: { error: unknown; reset: () => void }) => (
+    <main class="min-h-screen flex items-center justify-center p-6">
+      <div class="max-w-xl rounded-xl border border-error/30 bg-error/10 p-5 space-y-3">
+        <h1 class="text-2xl font-bold text-error">Route Error</h1>
+        <p class="text-sm opacity-80">
+          {props.error instanceof Error ? props.error.message : String(props.error)}
+        </p>
+        <button class="btn btn-sm btn-error" onClick={props.reset}>
+          Retry
+        </button>
+      </div>
+    </main>
+  ),
   shellComponent: RootComponent,
 })
 

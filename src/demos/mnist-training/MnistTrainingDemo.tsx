@@ -2,7 +2,8 @@ import { For, Index, Show, createEffect, createMemo, createSignal, onMount, type
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
 import { ConfigRadioGroup } from '../../components/ui-parts/configs/ConfigRadioGroup'
 import { SingleStageFullLayout } from '../../components/demo-layouts/single-stage-full'
-import { createMnistTrainingStore, type GradientRankSample, type LossPoint, type RankingMode } from './training-store'
+import { LossPlot, type LossPlotPoint } from '../../components/plots/loss'
+import { createMnistTrainingStore, type GradientRankSample, type RankingMode } from './training-store'
 
 const optimizerOptions: Array<{ label: string; value: 'adam' | 'sgd' }> = [
     { label: 'Adam', value: 'adam' },
@@ -13,121 +14,6 @@ const rankingOptions: Array<{ label: string; value: RankingMode }> = [
     { label: 'All Seen', value: 'all' },
     { label: 'Latest Window', value: 'window' },
 ]
-
-function LossCurve(props: {
-    points: LossPoint[]
-    sampleBudget: number
-}): JSX.Element {
-    const width = 900
-    const height = 340
-    const paddingLeft = 56
-    const paddingRight = 24
-    const paddingTop = 20
-    const paddingBottom = 48
-    const chartWidth = width - paddingLeft - paddingRight
-    const chartHeight = height - paddingTop - paddingBottom
-
-    const xMax = () => Math.max(1, props.sampleBudget, props.points[props.points.length - 1]?.samples ?? 1)
-    const yBounds = () => {
-        if (props.points.length === 0) return { min: 0, max: 1 }
-        const values = props.points.flatMap(point => [point.trainLoss, point.testLoss])
-        const min = Math.min(...values)
-        const max = Math.max(...values)
-        const pad = Math.max((max - min) * 0.15, 1e-4)
-        return { min: min - pad, max: max + pad }
-    }
-
-    const xScale = (x: number) => paddingLeft + (x / xMax()) * chartWidth
-    const yScale = (y: number) => {
-        const bounds = yBounds()
-        const ratio = (y - bounds.min) / Math.max(bounds.max - bounds.min, 1e-6)
-        return paddingTop + (1 - ratio) * chartHeight
-    }
-
-    const trainPath = createMemo(() => {
-        if (props.points.length === 0) return ''
-        return props.points
-            .map((point, index) => `${index === 0 ? 'M' : 'L'} ${xScale(point.samples)} ${yScale(point.trainLoss)}`)
-            .join(' ')
-    })
-    const testPath = createMemo(() => {
-        if (props.points.length === 0) return ''
-        return props.points
-            .map((point, index) => `${index === 0 ? 'M' : 'L'} ${xScale(point.samples)} ${yScale(point.testLoss)}`)
-            .join(' ')
-    })
-
-    const yTicks = createMemo(() => {
-        const bounds = yBounds()
-        const ticks: Array<{ value: number; y: number }> = []
-        for (let i = 0; i < 5; i++) {
-            const t = i / 4
-            const value = bounds.max - t * (bounds.max - bounds.min)
-            ticks.push({
-                value,
-                y: yScale(value),
-            })
-        }
-        return ticks
-    })
-
-    return (
-        <svg viewBox={`0 0 ${width} ${height}`} class="w-full h-full">
-            <rect x={paddingLeft} y={paddingTop} width={chartWidth} height={chartHeight} fill="rgba(255,255,255,0.6)" rx="10" />
-
-            <For each={yTicks()}>
-                {(tick) => (
-                    <>
-                        <line
-                            x1={paddingLeft}
-                            y1={tick.y}
-                            x2={paddingLeft + chartWidth}
-                            y2={tick.y}
-                            stroke="rgba(0,0,0,0.12)"
-                            stroke-width="1"
-                        />
-                        <text
-                            x={paddingLeft - 8}
-                            y={tick.y + 4}
-                            text-anchor="end"
-                            class="fill-base-content/60"
-                            style={{ 'font-size': '11px' }}
-                        >
-                            {tick.value.toFixed(3)}
-                        </text>
-                    </>
-                )}
-            </For>
-
-            <line x1={paddingLeft} y1={paddingTop + chartHeight} x2={paddingLeft + chartWidth} y2={paddingTop + chartHeight} stroke="rgba(0,0,0,0.3)" />
-            <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft} y2={paddingTop + chartHeight} stroke="rgba(0,0,0,0.3)" />
-
-            <Show when={props.points.length > 0}>
-                <>
-                    <path d={trainPath()} fill="none" stroke="#1d4ed8" stroke-width="2.5" />
-                    <path d={testPath()} fill="none" stroke="#d946ef" stroke-width="2.5" />
-                </>
-            </Show>
-
-            <text x={width / 2} y={height - 10} text-anchor="middle" class="fill-base-content/60" style={{ 'font-size': '12px' }}>
-                Total samples trained
-            </text>
-
-            <text x={paddingLeft + 10} y={paddingTop + 16} class="fill-blue-700" style={{ 'font-size': '12px', 'font-weight': 600 }}>
-                Train Curve
-            </text>
-            <text x={paddingLeft + 100} y={paddingTop + 16} class="fill-fuchsia-600" style={{ 'font-size': '12px', 'font-weight': 600 }}>
-                Test Curve
-            </text>
-
-            <Show when={props.points.length === 0}>
-                <text x={width / 2} y={height / 2} text-anchor="middle" class="fill-base-content/50" style={{ 'font-size': '14px' }}>
-                    Start training to render the curve.
-                </text>
-            </Show>
-        </svg>
-    )
-}
 
 function SamplePreview(props: { pixels: Float32Array }): JSX.Element {
     let canvas!: HTMLCanvasElement
@@ -245,6 +131,11 @@ export function MnistTrainingDemo() {
     })
     const [showDigitLabels, setShowDigitLabels] = createSignal(true)
     const displayedSamples = createMemo(() => getDisplayedTopSamples())
+    const lossPlotPoints = createMemo<LossPlotPoint[]>(() => state.lossCurve.map(point => ({
+        x: point.samples,
+        train: point.trainLoss,
+        test: point.testLoss,
+    })))
 
     const learningRateConfig = () => {
         if (optimizerType() === 'adam') {
@@ -448,7 +339,14 @@ export function MnistTrainingDemo() {
             >
                 <div class="min-h-0 grow flex flex-col gap-4">
                     <div class="rounded-2xl border border-base-content/10 bg-base-100/90 p-3 min-h-[280px] shadow-xl shadow-base-content/5">
-                        <LossCurve points={state.lossCurve} sampleBudget={state.sampleBudget} />
+                        <LossPlot
+                            points={lossPlotPoints()}
+                            xMax={state.sampleBudget}
+                            xAxisLabel="Total samples trained"
+                            trainLabel="Train Curve"
+                            testLabel="Test Curve"
+                            emptyLabel="Start training to render the curve."
+                        />
                     </div>
 
                     <div class="min-h-0 grow grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-4">

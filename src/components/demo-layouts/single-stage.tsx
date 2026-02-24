@@ -3,7 +3,7 @@ import { Dynamic } from 'solid-js/web'
 
 interface SingleStageLayoutProps {
     title: string
-    subtitle?: string
+    subtitle?: string | JSX.Element | (() => JSX.Element)
     backHref?: string
     backLabel?: string
     config: Component
@@ -13,6 +13,8 @@ interface SingleStageLayoutProps {
 export function SingleStageLayout(props: SingleStageLayoutProps): JSX.Element {
     const Config = props.config
     const Stage = props.stage
+    const subtitle = props.subtitle
+    const renderSubtitle = () => (typeof subtitle === 'function' ? subtitle() : subtitle)
 
     return (
         <div
@@ -46,12 +48,12 @@ export function SingleStageLayout(props: SingleStageLayoutProps): JSX.Element {
                                 >
                                     {props.title}
                                 </h1>
-                                {props.subtitle && (
+                                {subtitle !== undefined && subtitle !== null && (
                                     <p
                                         class="text-base md:text-lg"
                                         style={{ 'font-family': "'Patrick Hand', cursive", color: '#2d2d2d', opacity: '0.72' }}
                                     >
-                                        {props.subtitle}
+                                        {renderSubtitle()}
                                     </p>
                                 )}
                             </header>

@@ -1,6 +1,6 @@
 import { numpy as np, tree, valueAndGrad } from '@jax-js/jax'
 import { adam, sgd, applyUpdates, type OptState } from '@jax-js/optax'
-import { initJax } from '../../lib/deep-learning/deep-learning'
+import { initJax } from '../../lib/deeplearning'
 
 export { initJax, type OptState }
 
@@ -102,7 +102,6 @@ export async function trainOnlineStep(
     X: np.Array,
     y: np.Array
 ): Promise<{ params: MnistMlpParams; optState: OptState; loss: number; gradNorm: number }> {
-    // @ts-expect-error — Generic JsTree mapping with valueAndGrad is valid at runtime
     const [lossVal, lossGrad] = valueAndGrad(mseLoss)(tree.ref(params), X, y) as [np.Array, MnistMlpParams]
     const gradNorm = await gradientNormL2(tree.ref(lossGrad))
     const [updates, newOptState] = solver.update(lossGrad, optState)
@@ -125,7 +124,6 @@ export async function computeSampleGradNorm(
     X: np.Array,
     y: np.Array
 ): Promise<number> {
-    // @ts-expect-error — Generic JsTree mapping with valueAndGrad is valid at runtime
     const [, lossGrad] = valueAndGrad(mseLoss)(tree.ref(params), X, y) as [np.Array, MnistMlpParams]
     return await gradientNormL2(lossGrad)
 }

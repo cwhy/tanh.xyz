@@ -2,6 +2,34 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+@theme {
+  --color-primary: #662200;
+  --color-secondary: #2d5da1;
+  --color-accent: #ff4d4d;
+  --color-neutral: #2d2d2d;
+  --color-base-100: #ffffff;
+  --color-base-200: #fdfbf7;
+  --color-base-300: #e5e0d8;
+  --color-base-content: #2d2d2d;
+
+  --font-sans: 'Patrick Hand', 'Comic Sans MS', cursive, sans-serif;
+  --font-heading: 'Kalam', 'Comic Sans MS', cursive, sans-serif;
+}
+
+:root {
+  --color-primary: #662200;
+  --color-secondary: #2d5da1;
+  --color-accent: #ff4d4d;
+  --color-neutral: #2d2d2d;
+  --color-base-100: #ffffff;
+  --color-base-200: #fdfbf7;
+  --color-base-300: #e5e0d8;
+  --color-base-content: #2d2d2d;
+
+  --paper-accent-red: #ff4d4d;
+  --paper-accent-red-hover: #e64040;
+}
+
 body {
   @apply m-0;
   font-family: 'Patrick Hand', -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
@@ -15,4 +43,18 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
+}
+
+.link,
+a.link,
+.link-primary,
+a.link-primary {
+  color: var(--paper-accent-red);
+}
+
+.link:hover,
+a.link:hover,
+.link-primary:hover,
+a.link-primary:hover {
+  color: var(--paper-accent-red-hover);
 }

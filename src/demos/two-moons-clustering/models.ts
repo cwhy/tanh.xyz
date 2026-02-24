@@ -9,7 +9,7 @@ import {
     initOptimizer,
     trainStep as genericTrainStep,
     type OptState,
-} from '../../lib/deep-learning/deep-learning'
+} from '../../lib/deeplearning'
 
 // Re-export for convenience
 export { initJax, initOptimizer, type OptState }

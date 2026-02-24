@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+    <!-- digit drawn wobbly -->
+    <path d="M 80 60 C 120 50, 150 70, 140 110 C 130 150, 90 170, 70 150 C 50 130, 70 90, 110 90 C 150 90, 160 130, 150 160" stroke="#2d2d2d" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    
+    <!-- bounding box -->
+    <rect x="50" y="40" width="130" height="150" stroke="#2d5da1" stroke-width="4" stroke-dasharray="8 8" fill="none" transform="rotate(-3 115 115)" />
+    
+    <!-- graph -->
+    <path d="M 220 180 L 220 60 M 220 180 L 360 180" stroke="#2d2d2d" stroke-width="4" stroke-linecap="round" />
+    <!-- curve -->
+    <path d="M 230 170 Q 260 80 350 70" stroke="#ff4d4d" stroke-width="5" fill="none" stroke-linecap="round" />
+</svg>

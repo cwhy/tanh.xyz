@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+    <!-- Cluster 1 bounding shape (wobbly) -->
+    <path d="M 80 60 Q 140 40 160 100 T 100 160 T 60 100 Z" fill="#fff9c4" stroke="#2d2d2d" stroke-width="4" stroke-dasharray="8 6" />
+    <circle cx="110" cy="90" r="8" fill="#2d5da1" stroke="#2d2d2d" stroke-width="3" />
+    <circle cx="130" cy="110" r="8" fill="#2d5da1" stroke="#2d2d2d" stroke-width="3" />
+    <circle cx="90" cy="120" r="8" fill="#2d5da1" stroke="#2d2d2d" stroke-width="3" />
+
+    <!-- Cluster 2 bounding shape -->
+    <path d="M 240 80 Q 300 60 320 120 T 260 180 T 220 120 Z" fill="#e5e0d8" stroke="#2d2d2d" stroke-width="4" stroke-dasharray="8 6" />
+    <circle cx="270" cy="110" r="8" fill="#ff4d4d" stroke="#2d2d2d" stroke-width="3" />
+    <circle cx="290" cy="140" r="8" fill="#ff4d4d" stroke="#2d2d2d" stroke-width="3" />
+    <circle cx="250" cy="150" r="8" fill="#ff4d4d" stroke="#2d2d2d" stroke-width="3" />
+    
+    <!-- connecting lines linking to a new point -->
+    <circle cx="190" cy="150" r="7" fill="#fdfbf7" stroke="#2d2d2d" stroke-width="3" />
+    <path d="M 190 150 L 130 110" stroke="#2d2d2d" stroke-width="3" stroke-dasharray="6 6" />
+    <path d="M 190 150 L 250 150" stroke="#2d2d2d" stroke-width="3" stroke-dasharray="6 6" />
+</svg>

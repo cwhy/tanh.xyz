@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+    <!-- 12 + 34 = 46 text wobbly -->
+    <text x="60" y="110" font-family="'Patrick Hand', Kalam, cursive, sans-serif" font-size="56" fill="#2d2d2d" font-weight="bold">12 + 34</text>
+    <path d="M 60 130 L 240 124" stroke="#2d5da1" stroke-width="5" />
+    <text x="140" y="190" font-family="'Patrick Hand', Kalam, cursive, sans-serif" font-size="56" fill="#ff4d4d" font-weight="bold">46</text>
+    
+    <!-- grokking curve -->
+    <path d="M 260 180 L 260 60 M 260 180 L 360 180" stroke="#2d2d2d" stroke-width="4" stroke-linecap="round" />
+    
+    <!-- train loss -->
+    <path d="M 270 160 L 290 170 L 310 176 L 350 176" stroke="#2d5da1" stroke-width="4" fill="none" stroke-dasharray="6 4" />
+    
+    <!-- test loss (grokking drop) -->
+    <path d="M 270 80 L 300 84 C 320 90, 330 170, 350 170" stroke="#ff4d4d" stroke-width="5" fill="none" stroke-linecap="round" />
+</svg>

@@ -16,6 +16,7 @@ interface ConfigRadioGroupProps<T extends string> {
     labelInline?: boolean
     labelRightClass?: string
     controlsInline?: boolean
+    btnClass?: string
 }
 
 export function ConfigRadioGroup<T extends string>(props: ConfigRadioGroupProps<T>): JSX.Element {
@@ -26,7 +27,7 @@ export function ConfigRadioGroup<T extends string>(props: ConfigRadioGroupProps<
         <For each={props.options}>
             {(option) => (
                 <input
-                    class="join-item btn btn-sm btn-outline px-4"
+                    class={`join-item btn btn-sm px-4 ${props.btnClass ?? 'btn-outline'}`}
                     type="radio"
                     name={props.name}
                     aria-label={option.label}
