@@ -4,6 +4,7 @@ import twoMoonThumb from '../demos/two-moons-clustering/thumbnail.svg'
 import nkClusterThumb from '../demos/nk-clustering/thumbnail.svg'
 import mnistThumb from '../demos/mnist-training/thumbnail.svg'
 import additionThumb from '../demos/addition-grokking/thumbnail.svg'
+import linearSystemsThumb from '../demos/linear-systems/thumbnail.svg'
 export const Route = createFileRoute('/')({ component: HomePage })
 
 function HomePage() {
@@ -100,6 +101,7 @@ function HomePage() {
               description="Interactive simulation of a linear dynamical system over time. Observe state evolution and matrix operations."
               href="/demos/linear-systems"
               status="ready"
+              thumbnail={linearSystemsThumb}
             />
 
             <DemoCard
