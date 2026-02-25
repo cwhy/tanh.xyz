@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemosTwoMoonRouteImport } from './routes/demos/two-moon'
 import { Route as DemosNkClusteringRouteImport } from './routes/demos/nk-clustering'
 import { Route as DemosMnistTrainingRouteImport } from './routes/demos/mnist-training'
+import { Route as DemosMnistNkClusteringRouteImport } from './routes/demos/mnist-nk-clustering'
 import { Route as DemosLinearSystemsRouteImport } from './routes/demos/linear-systems'
 import { Route as DemosAdditionGrokkingRouteImport } from './routes/demos/addition-grokking'
 
@@ -36,6 +37,11 @@ const DemosMnistTrainingRoute = DemosMnistTrainingRouteImport.update({
   path: '/demos/mnist-training',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemosMnistNkClusteringRoute = DemosMnistNkClusteringRouteImport.update({
+  id: '/demos/mnist-nk-clustering',
+  path: '/demos/mnist-nk-clustering',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemosLinearSystemsRoute = DemosLinearSystemsRouteImport.update({
   id: '/demos/linear-systems',
   path: '/demos/linear-systems',
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/demos/addition-grokking': typeof DemosAdditionGrokkingRoute
   '/demos/linear-systems': typeof DemosLinearSystemsRoute
+  '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
   '/demos/mnist-training': typeof DemosMnistTrainingRoute
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/demos/addition-grokking': typeof DemosAdditionGrokkingRoute
   '/demos/linear-systems': typeof DemosLinearSystemsRoute
+  '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
   '/demos/mnist-training': typeof DemosMnistTrainingRoute
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/demos/addition-grokking': typeof DemosAdditionGrokkingRoute
   '/demos/linear-systems': typeof DemosLinearSystemsRoute
+  '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
   '/demos/mnist-training': typeof DemosMnistTrainingRoute
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
@@ -78,6 +87,7 @@ export interface FileRouteTypes {
     | '/'
     | '/demos/addition-grokking'
     | '/demos/linear-systems'
+    | '/demos/mnist-nk-clustering'
     | '/demos/mnist-training'
     | '/demos/nk-clustering'
     | '/demos/two-moon'
@@ -86,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/demos/addition-grokking'
     | '/demos/linear-systems'
+    | '/demos/mnist-nk-clustering'
     | '/demos/mnist-training'
     | '/demos/nk-clustering'
     | '/demos/two-moon'
@@ -94,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/demos/addition-grokking'
     | '/demos/linear-systems'
+    | '/demos/mnist-nk-clustering'
     | '/demos/mnist-training'
     | '/demos/nk-clustering'
     | '/demos/two-moon'
@@ -103,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DemosAdditionGrokkingRoute: typeof DemosAdditionGrokkingRoute
   DemosLinearSystemsRoute: typeof DemosLinearSystemsRoute
+  DemosMnistNkClusteringRoute: typeof DemosMnistNkClusteringRoute
   DemosMnistTrainingRoute: typeof DemosMnistTrainingRoute
   DemosNkClusteringRoute: typeof DemosNkClusteringRoute
   DemosTwoMoonRoute: typeof DemosTwoMoonRoute
@@ -138,6 +151,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof DemosMnistTrainingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demos/mnist-nk-clustering': {
+      id: '/demos/mnist-nk-clustering'
+      path: '/demos/mnist-nk-clustering'
+      fullPath: '/demos/mnist-nk-clustering'
+      preLoaderRoute: typeof DemosMnistNkClusteringRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demos/linear-systems': {
       id: '/demos/linear-systems'
       path: '/demos/linear-systems'
@@ -159,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DemosAdditionGrokkingRoute: DemosAdditionGrokkingRoute,
   DemosLinearSystemsRoute: DemosLinearSystemsRoute,
+  DemosMnistNkClusteringRoute: DemosMnistNkClusteringRoute,
   DemosMnistTrainingRoute: DemosMnistTrainingRoute,
   DemosNkClusteringRoute: DemosNkClusteringRoute,
   DemosTwoMoonRoute: DemosTwoMoonRoute,

@@ -5,6 +5,8 @@ import nkClusterThumb from '../demos/nk-clustering/thumbnail.svg'
 import mnistThumb from '../demos/mnist-training/thumbnail.svg'
 import additionThumb from '../demos/addition-grokking/thumbnail.svg'
 import linearSystemsThumb from '../demos/linear-systems/thumbnail.svg'
+// Reuse NK clustering thumbnail for MNIST NK demo
+const mnistNkThumb = nkClusterThumb
 export const Route = createFileRoute('/')({ component: HomePage })
 
 function HomePage() {
@@ -79,6 +81,14 @@ function HomePage() {
               href="/demos/nk-clustering"
               status="ready"
               thumbnail={nkClusterThumb}
+            />
+
+            <DemoCard
+              title="MNIST NK Clustering"
+              description="NK clustering on MNIST digits with JAX-JS accelerated distance computation. Clusters shown as image grids sorted by tightness, with top-1 growth mechanism."
+              href="/demos/mnist-nk-clustering"
+              status="ready"
+              thumbnail={mnistNkThumb}
             />
 
             <DemoCard
