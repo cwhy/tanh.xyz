@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+    <!-- Handrawn style background box, slightly tilted -->
+    <path d="M 60 50 Q 180 45 320 50 Q 330 110 325 180 Q 200 185 55 180 Q 50 120 60 50 Z" fill="#fdfbf7" stroke="#2d2d2d" stroke-width="4" stroke-dasharray="10 4" />
+    
+    <!-- Time steps columns (Heatmap) -->
+    <!-- Col 1 -->
+    <rect x="80" y="70" width="30" height="30" fill="#2d5da1" rx="4" stroke="#2d2d2d" stroke-width="3" transform="rotate(-2 95 85)" />
+    <rect x="80" y="105" width="30" height="30" fill="#fdfbf7" rx="4" stroke="#2d2d2d" stroke-width="3" transform="rotate(1 95 120)" />
+    <rect x="80" y="140" width="30" height="30" fill="#ff4d4d" rx="4" stroke="#2d2d2d" stroke-width="3" transform="rotate(-1 95 155)" />
+    
+    <!-- Arrow -->
+    <path d="M 125 120 Q 135 115 145 120" stroke="#2d2d2d" stroke-width="3" fill="none" stroke-linecap="round" />
+    <path d="M 140 115 L 145 120 L 140 125" stroke="#2d2d2d" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Col 2 -->
+    <rect x="160" y="70" width="30" height="30" fill="#ff4d4d" rx="4" stroke="#2d2d2d" stroke-width="3" transform="rotate(2 175 85)" />
+    <rect x="160" y="105" width="30" height="30" fill="#2d5da1" rx="4" stroke="#2d2d2d" stroke-width="3" transform="rotate(-1 175 120)" />
+    <rect x="160" y="140" width="30" height="30" fill="#2d5da1" rx="4" stroke="#2d2d2d" stroke-width="3" transform="rotate(2 175 155)" />
+    
+    <!-- Arrow -->
+    <path d="M 205 120 Q 215 125 225 120" stroke="#2d2d2d" stroke-width="3" fill="none" stroke-linecap="round" />
+    <path d="M 220 115 L 225 120 L 220 125" stroke="#2d2d2d" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <!-- Col 3 -->
+    <rect x="240" y="70" width="30" height="30" fill="#2d5da1" rx="4" stroke="#2d2d2d" stroke-width="3" transform="rotate(-2 255 85)" />
+    <rect x="240" y="105" width="30" height="30" fill="#ff4d4d" rx="4" stroke="#2d2d2d" stroke-width="3" transform="rotate(1 255 120)" />
+    <rect x="240" y="140" width="30" height="30" fill="#fdfbf7" rx="4" stroke="#2d2d2d" stroke-width="3" transform="rotate(-2 255 155)" />
+
+    <!-- Network connection representation lines -->
+    <path d="M 100 85 L 175 120" stroke="#2d2d2d" stroke-width="2" stroke-dasharray="4 4" opacity="0.3" z-index="-1" />
+    <path d="M 175 120 L 255 155" stroke="#2d2d2d" stroke-width="2" stroke-dasharray="4 4" opacity="0.3" z-index="-1" />
+</svg>
