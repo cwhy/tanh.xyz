@@ -95,6 +95,12 @@ function HomePage() {
               status="ready"
               thumbnail={additionThumb}
             />
+            <DemoCard
+              title="Linear Systems"
+              description="Interactive simulation of a linear dynamical system over time. Observe state evolution and matrix operations."
+              href="/demos/linear-systems"
+              status="ready"
+            />
 
             <DemoCard
               title="Autoencoder Visualization"
