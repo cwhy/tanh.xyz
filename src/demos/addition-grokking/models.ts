@@ -1,15 +1,15 @@
 import { nn, numpy as np, tree, valueAndGrad } from '@jax-js/jax'
+import { initJax } from '../../lib/deeplearning/runtime'
 import {
     applyOptimizerUpdates,
     createOptimizerState,
-    initJax,
-    trainStepWithSolver,
     type OptState,
     type OptimizerOptions,
     type OptimizerSolver,
     type OptimizerType,
     type Schedule,
-} from '../../lib/deeplearning'
+} from '../../lib/deeplearning/optimization'
+import { trainStepWithSolver } from '../../lib/deeplearning/training'
 import {
     ADDITION_LM_INPUT_LEN,
     ADDITION_PROMPT_LEN,

@@ -4,7 +4,7 @@ import type { BasicDatasetDistribution } from '../../lib/datasets/basic'
 import type { CenterType } from './algorithm'
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
 import { ConfigRadioGroup } from '../../components/ui-parts/configs/ConfigRadioGroup'
-import { SingleStageLayout } from '../../components/demo-layouts/single-stage'
+import { SingleStageLayout } from '../../components/demo-layouts/SingleStage'
 
 const distributionOptions: Array<{ label: string; value: BasicDatasetDistribution }> = [
     { label: 'Two Moons', value: 'two-moons' },

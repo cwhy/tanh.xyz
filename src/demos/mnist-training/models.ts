@@ -1,6 +1,6 @@
 import { numpy as np, tree, valueAndGrad } from '@jax-js/jax'
 import { adam, sgd, applyUpdates, type OptState } from '@jax-js/optax'
-import { initJax } from '../../lib/deeplearning'
+import { initJax } from '../../lib/deeplearning/runtime'
 
 export { initJax, type OptState }
 

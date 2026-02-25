@@ -2,7 +2,7 @@ import { For, Show, onMount } from 'solid-js'
 import { createTrainingStore } from './training-store'
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
 import { ConfigRadioGroup } from '../../components/ui-parts/configs/ConfigRadioGroup'
-import { SingleStageLayout } from '../../components/demo-layouts/single-stage'
+import { SingleStageLayout } from '../../components/demo-layouts/SingleStage'
 
 const optimizerOptions: Array<{ label: string; value: 'adam' | 'sgd' }> = [
     { label: 'Adam', value: 'adam' },

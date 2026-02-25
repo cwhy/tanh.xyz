@@ -1,7 +1,7 @@
 import { For, Show, createMemo, onMount } from 'solid-js'
 import { ConfigRadioGroup } from '../../components/ui-parts/configs/ConfigRadioGroup'
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
-import { SingleStageLayout } from '../../components/demo-layouts/single-stage'
+import { SingleStageLayout } from '../../components/demo-layouts/SingleStage'
 import { LossPlot, type LossPlotPoint } from '../../components/plots/loss'
 import { DEFAULT_ADDITION_CURRICULUM } from '../../lib/datasets/jax/ten-digit-addition'
 import { createAdditionGrokkingStore } from './training-store'

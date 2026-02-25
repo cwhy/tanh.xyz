@@ -4,12 +4,12 @@
  */
 
 import { numpy as np, tree } from '@jax-js/jax'
+import { initJax } from '../../lib/deeplearning/runtime'
 import {
-    initJax,
     initOptimizer,
-    trainStep as genericTrainStep,
     type OptState,
-} from '../../lib/deeplearning'
+} from '../../lib/deeplearning/optimization'
+import { trainStep as genericTrainStep } from '../../lib/deeplearning/training'
 
 // Re-export for convenience
 export { initJax, initOptimizer, type OptState }

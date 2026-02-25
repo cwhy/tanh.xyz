@@ -1,7 +1,7 @@
 import { For, Index, Show, createEffect, createMemo, createSignal, onMount, type JSX } from 'solid-js'
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
 import { ConfigRadioGroup } from '../../components/ui-parts/configs/ConfigRadioGroup'
-import { SingleStageFullLayout } from '../../components/demo-layouts/single-stage-full'
+import { SingleStageFullLayout } from '../../components/demo-layouts/SingleStageFull'
 import { LossPlot, type LossPlotPoint } from '../../components/plots/loss'
 import { createMnistTrainingStore, type GradientRankSample, type RankingMode } from './training-store'
 
