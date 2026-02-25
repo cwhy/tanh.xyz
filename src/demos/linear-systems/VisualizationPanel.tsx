@@ -85,7 +85,7 @@ export function VisualizationPanel() {
                 <span>Time (Steps) →</span>
                 <div class="flex gap-2 items-center">
                     <span class="font-mono">{dataBounds().min.toFixed(2)}</span>
-                    <div class="w-32 h-4 bg-gradient-to-r from-[#59a8ff] via-white to-[#ff5959] border-[3px] border-[#2d2d2d] shadow-[2px_2px_0px_0px_#2d2d2d]" style={{ 'border-radius': '255px 15px 225px 15px / 15px 225px 15px 255px' }}></div>
+                    <div class="w-32 h-4 bg-gradient-to-r from-[#59a8ff] via-white to-[#ff5959] border-[3px] border-[#2d2d2d] shadow-[2px_2px_0px_0px_#2d2d2d]" style={{ 'border-radius': '255px 15px 225px 15px / 15px 225px 15px 255px' }} />
                     <span class="font-mono">{dataBounds().max.toFixed(2)}</span>
                 </div>
             </div>

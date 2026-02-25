@@ -97,6 +97,7 @@ export function createNKClusteringStore(): NKClusteringStore {
     }
 
     // Clustering state
+    // eslint-disable-next-line solid/reactivity
     let clusteringState = createNKClusteringState(n(), k(), centerType())
 
     // Reinitialize state when params change
@@ -186,7 +187,7 @@ export function createNKClusteringStore(): NKClusteringStore {
         // Shuffle points to simulate streaming order
         for (let i = points.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1))
-            ;[points[i], points[j]] = [points[j], points[i]]
+                ;[points[i], points[j]] = [points[j], points[i]]
         }
 
         setState({

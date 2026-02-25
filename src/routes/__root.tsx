@@ -38,7 +38,7 @@ export const Route = createRootRouteWithContext()({
         <p class="text-sm opacity-80">
           {props.error instanceof Error ? props.error.message : String(props.error)}
         </p>
-        <button class="btn btn-sm btn-error" onClick={props.reset}>
+        <button class="btn btn-sm btn-error" onClick={() => props.reset()}>
           Retry
         </button>
       </div>

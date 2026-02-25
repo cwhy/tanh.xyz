@@ -11,9 +11,6 @@ interface SingleStageFullLayoutProps {
 }
 
 export function SingleStageFullLayout(props: SingleStageFullLayoutProps): JSX.Element {
-    const Config = props.config
-    const Stage = props.stage
-
     return (
         <div
             class="min-h-screen"
@@ -56,11 +53,11 @@ export function SingleStageFullLayout(props: SingleStageFullLayoutProps): JSX.El
                                 )}
                             </header>
                             <div class="min-h-0 grow">
-                                <Dynamic component={Config} />
+                                <Dynamic component={props.config} />
                             </div>
                         </aside>
                         <section class="h-full min-h-0">
-                            <Dynamic component={Stage} />
+                            <Dynamic component={props.stage} />
                         </section>
                     </div>
                 </div>

@@ -34,7 +34,7 @@ export function generateMatrix(type: MatrixType, n: number, minVal: number, maxV
                 }
             }
             break
-        case 'watts-strogatz':
+        case 'watts-strogatz': {
             const k = Math.max(1, Math.floor(n / 3))
             for (let i = 0; i < n; i++) {
                 for (let j = 1; j <= k; j++) {
@@ -60,7 +60,8 @@ export function generateMatrix(type: MatrixType, n: number, minVal: number, maxV
                 }
             }
             break
-        case 'hubs':
+        }
+        case 'hubs': {
             const blockSize = Math.max(2, Math.floor(n / 2))
             for (let i = 0; i < n; i++) {
                 const blockIndex = Math.floor(i / blockSize)
@@ -76,6 +77,7 @@ export function generateMatrix(type: MatrixType, n: number, minVal: number, maxV
                 }
             }
             break
+        }
     }
 
     // Constrain to bounds

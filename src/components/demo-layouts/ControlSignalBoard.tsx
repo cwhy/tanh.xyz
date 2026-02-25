@@ -49,8 +49,7 @@ export function ControlSignalBoard(props: ControlSignalBoardProps): JSX.Element 
         }
     })
 
-    const subtitle = props.subtitle
-    const renderSubtitle = () => (typeof subtitle === 'function' ? subtitle() : subtitle)
+    const renderSubtitle = () => (typeof props.subtitle === 'function' ? props.subtitle() : props.subtitle)
 
     return (
         <div
@@ -82,7 +81,7 @@ export function ControlSignalBoard(props: ControlSignalBoardProps): JSX.Element 
                         >
                             {props.title}
                         </h1>
-                        {subtitle !== undefined && subtitle !== null && (
+                        {props.subtitle !== undefined && props.subtitle !== null && (
                             <p
                                 class="text-base md:text-lg mt-1"
                                 style={{ 'font-family': "'Patrick Hand', cursive", color: '#2d2d2d', opacity: '0.72' }}
@@ -116,9 +115,9 @@ export function ControlSignalBoard(props: ControlSignalBoardProps): JSX.Element 
                         class="w-full h-4 bg-white border-2 border-[#2d2d2d] shadow-[2px_2px_0px_0px_#2d2d2d] group-hover:bg-[#ff4d4d] transition-colors flex items-center justify-center gap-2"
                         style={{ 'border-radius': '255px 15px 225px 15px / 15px 225px 15px 255px' }}
                     >
-                        <div class="w-1.5 h-1.5 bg-[#2d2d2d] rounded-full group-hover:bg-white transition-colors"></div>
-                        <div class="w-1.5 h-1.5 bg-[#2d2d2d] rounded-full group-hover:bg-white transition-colors"></div>
-                        <div class="w-1.5 h-1.5 bg-[#2d2d2d] rounded-full group-hover:bg-white transition-colors"></div>
+                        <div class="w-1.5 h-1.5 bg-[#2d2d2d] rounded-full group-hover:bg-white transition-colors" />
+                        <div class="w-1.5 h-1.5 bg-[#2d2d2d] rounded-full group-hover:bg-white transition-colors" />
+                        <div class="w-1.5 h-1.5 bg-[#2d2d2d] rounded-full group-hover:bg-white transition-colors" />
                     </div>
                 </div>
 

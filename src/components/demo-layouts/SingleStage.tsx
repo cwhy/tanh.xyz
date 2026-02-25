@@ -11,10 +11,7 @@ interface SingleStageLayoutProps {
 }
 
 export function SingleStageLayout(props: SingleStageLayoutProps): JSX.Element {
-    const Config = props.config
-    const Stage = props.stage
-    const subtitle = props.subtitle
-    const renderSubtitle = () => (typeof subtitle === 'function' ? subtitle() : subtitle)
+    const renderSubtitle = () => (typeof props.subtitle === 'function' ? props.subtitle() : props.subtitle)
 
     return (
         <div
@@ -48,7 +45,7 @@ export function SingleStageLayout(props: SingleStageLayoutProps): JSX.Element {
                                 >
                                     {props.title}
                                 </h1>
-                                {subtitle !== undefined && subtitle !== null && (
+                                {props.subtitle !== undefined && props.subtitle !== null && (
                                     <p
                                         class="text-base md:text-lg"
                                         style={{ 'font-family': "'Patrick Hand', cursive", color: '#2d2d2d', opacity: '0.72' }}
@@ -58,10 +55,10 @@ export function SingleStageLayout(props: SingleStageLayoutProps): JSX.Element {
                                 )}
                             </header>
                             <div class="min-h-0 grow">
-                                <Dynamic component={Config} />
+                                <Dynamic component={props.config} />
                             </div>
                         </aside>
-                        <section class="h-full min-h-0"><Dynamic component={Stage} /></section>
+                        <section class="h-full min-h-0"><Dynamic component={props.stage} /></section>
                     </div>
                 </div>
             </div>
