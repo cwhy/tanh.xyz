@@ -26,6 +26,14 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
+export interface EvennessSnapshot {
+    step: number
+    median: number
+    p75: number
+    p25: number
+    min: number
+}
+
 export type LoadStatus = 'idle' | 'loading' | 'ready'
 
 export interface ClusterDisplayInfo {
@@ -69,6 +77,10 @@ export interface MnistNKStore {
     totalCount: () => number
     lastAddedDataIndex: () => number | null
     lastEvictedDataIndex: () => number | null
+
+    // Evenness history
+    evennessHistory: () => EvennessSnapshot[]
+    streamFinished: () => boolean
 
     // Actions
     loadAndGenerate: () => Promise<void>
@@ -129,6 +141,10 @@ export function createMnistNKStore(): MnistNKStore {
 
     let streamingInterval: ReturnType<typeof setInterval> | null = null
 
+    // Evenness history
+    let evennessHistoryArr: EvennessSnapshot[] = []
+    const [historyVersion, setHistoryVersion] = createSignal(0)
+
     // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------
@@ -163,7 +179,7 @@ export function createMnistNKStore(): MnistNKStore {
                 pointCount: cluster.points.length,
                 isTopHalf: topHalfIds.has(cluster.id),
                 isLastOne: cluster.id === lastOneId,
-                isSaturated: cluster.maxSize <= k + 1,
+                isSaturated: cluster.maxSize <= k + 2,
                 medoidDataIndex: mode?.dataIndex ?? null,
                 kNNDataIndex: kNNPoint?.dataIndex ?? null,
                 pointsSortedByDist: pointsSortedByDist.map(({ point, distToMode }) => ({
@@ -176,11 +192,32 @@ export function createMnistNKStore(): MnistNKStore {
         })
 
         setState({ clusters: displays })
+
+        // Record evenness history snapshot
+        if (clusters.length > 0) {
+            const evennessValues = clusters.map(c => c.evenness).sort((a, b) => a - b)
+            const percentile = (arr: number[], p: number) => {
+                const idx = (p / 100) * (arr.length - 1)
+                const lo = Math.floor(idx)
+                const hi = Math.ceil(idx)
+                return lo === hi ? arr[lo] : arr[lo] * (hi - idx) + arr[hi] * (idx - lo)
+            }
+            evennessHistoryArr.push({
+                step: state.currentIdx,
+                median: percentile(evennessValues, 50),
+                p75: percentile(evennessValues, 75),
+                p25: percentile(evennessValues, 25),
+                min: evennessValues[0],
+            })
+            setHistoryVersion(v => v + 1)
+        }
     }
 
     function reinitClustering() {
         stopStreaming()
         clusteringState = createMnistNKState(n(), k(), top1Enabled(), last1ShrinkEnabled())
+        evennessHistoryArr = []
+        setHistoryVersion(0)
         setState({
             clusters: [],
             currentIdx: 0,
@@ -304,6 +341,8 @@ export function createMnistNKStore(): MnistNKStore {
 
     function reset() {
         stopStreaming()
+        evennessHistoryArr = []
+        setHistoryVersion(0)
         if (allImageData.length > 0) {
             const indices = Array.from({ length: totalImages }, (_, i) => i)
             for (let i = indices.length - 1; i > 0; i--) {
@@ -350,6 +389,8 @@ export function createMnistNKStore(): MnistNKStore {
         totalCount: () => shuffledIndices.length,
         lastAddedDataIndex: () => state.lastAddedDataIndex,
         lastEvictedDataIndex: () => state.lastEvictedDataIndex,
+        evennessHistory: () => { historyVersion(); return evennessHistoryArr },
+        streamFinished: () => state.loadStatus === 'ready' && state.currentIdx >= shuffledIndices.length,
         loadAndGenerate,
         startStreaming,
         stopStreaming,

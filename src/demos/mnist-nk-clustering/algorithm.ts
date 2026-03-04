@@ -236,13 +236,13 @@ function getTopHalfClusterIds(clusters: MnistCluster[]): Set<number> {
 }
 
 /**
- * Find the least-even cluster that can still shrink (maxSize > k+1), excluding a given id.
+ * Find the least-even cluster that can still shrink (maxSize > k+2), excluding a given id.
  * Used by Last-1 Shrink to pick which cluster to shrink when top-1 grows.
  */
 function getLeastEvenShrinkable(clusters: MnistCluster[], k: number, excludeId: number): MnistCluster | null {
     let worst: MnistCluster | null = null
     for (const c of clusters) {
-        if (c.id === excludeId || c.maxSize <= k + 1) continue
+        if (c.id === excludeId || c.maxSize <= k + 2) continue
         if (worst === null || c.evenness < worst.evenness) worst = c
     }
     return worst

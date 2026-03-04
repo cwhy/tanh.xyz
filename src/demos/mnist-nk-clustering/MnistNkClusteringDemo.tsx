@@ -3,6 +3,8 @@ import { SingleStageFullLayout } from '../../components/demo-layouts/SingleStage
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
 import { MnistImage } from '../../components/mnist/MnistImage'
 import { createMnistNKStore, type ClusterDisplayInfo } from './store'
+import { EvennessHistoryChart } from './EvennessHistoryChart'
+import { BarChart3 } from 'lucide-solid'
 
 // ---------------------------------------------------------------------------
 // Cluster card
@@ -123,14 +125,40 @@ export function MnistNkClusteringDemo(): JSX.Element {
     // Image size in pixels (display size, not canvas pixels)
     const imageSize = 28
 
+    const MAX_CLUSTERS = 32
+    const [evenCount, setEvenCount] = createSignal(1)
     const [sortByEvenness, setSortByEvenness] = createSignal(true)
+    const [showHistoryModal, setShowHistoryModal] = createSignal(false)
+    let dialogRef!: HTMLDialogElement
 
     const displayedClusters = createMemo(() => {
         const clusters = store.clusters()
-        if (sortByEvenness()) {
-            return [...clusters].sort((a, b) => b.evenness - a.evenness)
+        if (clusters.length === 0) return []
+
+        // Sort all clusters by evenness (highest first)
+        const byEvenness = [...clusters].sort((a, b) => b.evenness - a.evenness)
+
+        // Pick evenCount from the most-even end, rest from the most-uneven end
+        const maxShown = Math.min(MAX_CLUSTERS, clusters.length)
+        const topN = Math.min(evenCount(), maxShown)
+        const bottomN = maxShown - topN
+        const topSlice = byEvenness.slice(0, topN)
+        const bottomSlice = bottomN > 0 ? byEvenness.slice(-bottomN) : []
+
+        // Deduplicate overlap
+        const seen = new Set(topSlice.map(c => c.id))
+        const merged = [...topSlice]
+        for (const c of bottomSlice) {
+            if (!seen.has(c.id)) merged.push(c)
         }
-        return clusters
+
+        // Re-sort for display
+        if (sortByEvenness()) {
+            merged.sort((a, b) => b.evenness - a.evenness)
+        } else {
+            merged.sort((a, b) => a.id - b.id)
+        }
+        return merged
     })
 
     const ConfigPanel = () => (
@@ -270,7 +298,7 @@ export function MnistNkClusteringDemo(): JSX.Element {
                     <span class="label-text">Last-1 Shrink</span>
                 </label>
                 <span class="text-xs text-base-content/50 pl-1">
-                    When Top-1 grows: shrink the least-even cluster by 1 (skips clusters already at K+1)
+                    When Top-1 grows: shrink the least-even cluster by 1 (skips clusters already at K+2)
                 </span>
             </div>
 
@@ -331,7 +359,7 @@ export function MnistNkClusteringDemo(): JSX.Element {
 
                 <button
                     class="btn btn-ghost btn-sm"
-                    onClick={() => store.reset()}
+                    onClick={() => { store.reset(); setEvenCount(1) }}
                     disabled={store.isStreaming()}
                 >
                     Reset Clusters
@@ -361,30 +389,62 @@ export function MnistNkClusteringDemo(): JSX.Element {
                     </div>
                 }
             >
-                {/* Progress bar + sort toggle */}
+                {/* Progress bar + display count slider */}
                 <div class="mb-4 flex flex-col gap-2">
-                    <div class="flex items-center justify-between">
-                        <Show when={store.processedCount() < store.totalCount()}>
-                            <div class="flex items-center gap-2 text-xs opacity-50" style={{ color: '#2d2d2d' }}>
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-2 text-xs opacity-50 whitespace-nowrap" style={{ color: '#2d2d2d' }}>
+                            <Show when={store.processedCount() < store.totalCount()}>
                                 <span>{store.processedCount()} / {store.totalCount()} images</span>
                                 <span>·</span>
-                                <span>{store.clusters().length} clusters</span>
+                            </Show>
+                            <span>{store.clusters().length} clusters</span>
+                            <label class="flex items-center gap-1.5 cursor-pointer select-none text-xs opacity-60 hover:opacity-90" style={{ color: '#2d2d2d' }}>
+                                <input
+                                    type="checkbox"
+                                    class="toggle toggle-xs"
+                                    checked={sortByEvenness()}
+                                    onChange={(e) => setSortByEvenness(e.currentTarget.checked)}
+                                />
+                                <span style={{ 'font-family': "'Patrick Hand', cursive" }}>sort by even-ness</span>
+                            </label>
+                        </div>
+                        <Show when={store.clusters().length > 0}>
+                            <div class="flex items-center gap-2 flex-1 justify-end" style={{ 'max-width': '280px' }}>
+                                <span class="text-[10px] opacity-40 whitespace-nowrap" style={{ color: '#2d2d2d', 'font-family': "'Patrick Hand', cursive" }}>
+                                    even
+                                </span>
+                                <input
+                                    type="range"
+                                    min={1}
+                                    max={Math.min(MAX_CLUSTERS, store.clusters().length)}
+                                    step={1}
+                                    value={evenCount()}
+                                    onInput={(e) => setEvenCount(parseInt(e.currentTarget.value))}
+                                    class="range range-xs range-primary flex-1"
+                                />
+                                <span class="text-[10px] opacity-40 whitespace-nowrap" style={{ color: '#2d2d2d', 'font-family': "'Patrick Hand', cursive" }}>
+                                    uneven
+                                </span>
+                                <span
+                                    class="text-xs font-mono opacity-70 whitespace-nowrap"
+                                    style={{ color: '#2d2d2d' }}
+                                >
+                                    {evenCount()}:{Math.min(MAX_CLUSTERS, store.clusters().length) - evenCount()}
+                                </span>
                             </div>
                         </Show>
-                        <Show when={store.processedCount() >= store.totalCount()}>
-                            <div class="text-xs opacity-50" style={{ color: '#2d2d2d' }}>
-                                {store.clusters().length} clusters
-                            </div>
+                        <Show when={store.evennessHistory().length > 0}>
+                            <button
+                                class="btn btn-xs btn-ghost gap-1 opacity-60 hover:opacity-100"
+                                onClick={() => {
+                                    setShowHistoryModal(true)
+                                    dialogRef?.showModal()
+                                }}
+                                title="Evenness History"
+                            >
+                                <BarChart3 size={12} />
+                            </button>
                         </Show>
-                        <label class="flex items-center gap-1.5 cursor-pointer select-none text-xs opacity-60 hover:opacity-90" style={{ color: '#2d2d2d' }}>
-                            <input
-                                type="checkbox"
-                                class="toggle toggle-xs"
-                                checked={sortByEvenness()}
-                                onChange={(e) => setSortByEvenness(e.currentTarget.checked)}
-                            />
-                            <span style={{ 'font-family': "'Patrick Hand', cursive" }}>sort by even-ness</span>
-                        </label>
                     </div>
                     <Show when={store.processedCount() < store.totalCount()}>
                         <progress
@@ -394,6 +454,8 @@ export function MnistNkClusteringDemo(): JSX.Element {
                         />
                     </Show>
                 </div>
+
+
 
                 {/* Cluster cards */}
                 <div class="columns-[280px] gap-4 space-y-0">
@@ -410,6 +472,26 @@ export function MnistNkClusteringDemo(): JSX.Element {
                     </For>
                 </div>
             </Show>
+
+            {/* Evenness history modal */}
+            <dialog
+                ref={dialogRef}
+                class="modal"
+                onClose={() => setShowHistoryModal(false)}
+            >
+                <div class="modal-box max-w-2xl bg-base-200">
+                    <form method="dialog">
+                        <button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3">✕</button>
+                    </form>
+                    <h3 class="font-bold text-lg mb-4">Evenness Distribution History</h3>
+                    <Show when={showHistoryModal()}>
+                        <EvennessHistoryChart history={store.evennessHistory()} />
+                    </Show>
+                </div>
+                <form method="dialog" class="modal-backdrop">
+                    <button>close</button>
+                </form>
+            </dialog>
         </div>
     )
 
