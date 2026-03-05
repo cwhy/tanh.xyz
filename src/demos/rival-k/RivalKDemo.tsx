@@ -1,7 +1,6 @@
 import { For, Show, createSignal, onCleanup, onMount } from 'solid-js'
-import { createNKClusteringStore } from './store'
+import { createRivalKStore } from './store'
 import type { BasicDatasetDistribution } from '../../lib/datasets/basic'
-import type { CenterType } from './algorithm'
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
 import { ConfigRadioGroup } from '../../components/ui-parts/configs/ConfigRadioGroup'
 import { SingleStageLayout } from '../../components/demo-layouts/SingleStage'
@@ -14,19 +13,21 @@ const distributionOptions: Array<{ label: string; value: BasicDatasetDistributio
     { label: 'Uniform', value: 'uniform' },
 ]
 
-const centerTypeOptions: Array<{ label: string; value: CenterType }> = [
-    { label: 'Medoid', value: 'medoid' },
-    { label: 'Centroid', value: 'centroid' },
-]
-
-export function NKClusteringPage() {
-    return <NKClusteringDemo />
+const maturityBadge: Record<string, { bg: string; text: string; label: string }> = {
+    kid: { bg: 'bg-sky-100', text: 'text-sky-700', label: 'kid' },
+    k2: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'K2' },
+    adult: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'adult' },
 }
 
-export function NKClusteringDemo() {
-    const store = createNKClusteringStore()
+export function RivalKPage() {
+    return <RivalKDemo />
+}
+
+export function RivalKDemo() {
+    const store = createRivalKStore()
     const [pointCount, setPointCount] = createSignal(100)
     const [distribution, setDistribution] = createSignal<BasicDatasetDistribution>('two-moons')
+    const [selectedClusterId, setSelectedClusterId] = createSignal<number | null>(null)
 
     const canvasSize = 760
     const [plotSize, setPlotSize] = createSignal(canvasSize)
@@ -65,6 +66,15 @@ export function NKClusteringDemo() {
         store.addSinglePoint(x, y)
     }
 
+    // Are we currently in the deferred-replay phase?
+    const isInReplayPhase = () =>
+        store.currentPointIndex() >= store.pendingPoints().length &&
+        store.replayQueueLength() > 0
+
+    // Pending points that haven't been consumed yet (initial batch only)
+    const remainingPendingPoints = () =>
+        store.pendingPoints().slice(store.currentPointIndex())
+
     const ConfigPanel = () => (
         <div class="h-full overflow-y-auto px-2 py-1 space-y-5">
             <div class="grid grid-cols-2 gap-3">
@@ -78,40 +88,19 @@ export function NKClusteringDemo() {
                 </div>
             </div>
 
-            <Show when={store.cancelReplay() && store.replayQueueLength() > 0}>
-                <div class="stat bg-warning/10 rounded-xl border border-warning/20 p-3">
-                    <div class="stat-title text-xs opacity-60">Replay Queue</div>
-                    <div class="stat-value text-xl text-warning">{store.replayQueueLength()}</div>
-                </div>
-            </Show>
-
             <ConfigSlider
-                label="N (Max Cluster Size)"
-                value={store.n()}
-                min={3}
-                max={50}
-                step={1}
-                onChange={(value) => store.setN(Math.round(value))}
-                disabled={store.isStreaming()}
-                minLabel="3"
-                maxLabel="50"
-                valueClass="label-text-alt text-primary font-mono"
-                rangeClass="range range-primary range-sm"
-            />
-
-            <ConfigSlider
-                label="K (Neighbors for Medoid)"
+                label="K (Neighbor Count)"
                 value={store.k()}
                 min={1}
-                max={Math.max(1, store.n() - 1)}
+                max={20}
                 step={1}
                 onChange={(value) => store.setK(Math.round(value))}
                 disabled={store.isStreaming()}
                 minLabel="1"
-                maxLabel={String(Math.max(1, store.n() - 1))}
-                helperText="K must be less than N. Lower K = denser medoid selection."
-                valueClass="label-text-alt text-secondary font-mono"
-                rangeClass="range range-secondary range-sm"
+                maxLabel="20"
+                helperText="Clusters mature at K+2 points. Lower K = tighter medoid."
+                valueClass="label-text-alt text-primary font-mono"
+                rangeClass="range range-primary range-sm"
             />
 
             <ConfigSlider
@@ -132,7 +121,7 @@ export function NKClusteringDemo() {
                 label="Point Count"
                 value={pointCount()}
                 min={20}
-                max={600}
+                max={1000}
                 step={10}
                 onChange={(value) => setPointCount(Math.round(value))}
                 disabled={store.isStreaming()}
@@ -149,15 +138,6 @@ export function NKClusteringDemo() {
                 disabled={store.isStreaming()}
             />
 
-            <ConfigRadioGroup
-                label="Center Type"
-                name="centerType"
-                value={store.centerType()}
-                options={centerTypeOptions}
-                onChange={store.setCenterType}
-                disabled={store.isStreaming()}
-            />
-
             <div class="form-control">
                 <label class="label cursor-pointer justify-start gap-3">
                     <input
@@ -171,38 +151,6 @@ export function NKClusteringDemo() {
                 </label>
                 <span class="text-xs text-base-content/50 pl-1">
                     When on, evicted points replay in additional rounds until none remain
-                </span>
-            </div>
-
-            <div class="form-control">
-                <label class="label cursor-pointer justify-start gap-3">
-                    <input
-                        type="checkbox"
-                        class="toggle toggle-warning"
-                        checked={store.top1Enabled()}
-                        onChange={(e) => store.setTop1Enabled(e.currentTarget.checked)}
-                        disabled={store.isStreaming()}
-                    />
-                    <span class="label-text">Top-Half Growth</span>
-                </label>
-                <span class="text-xs text-base-content/50 pl-1">
-                    Top 50% by even-ness (at least 2 clusters) grow instead of evicting
-                </span>
-            </div>
-
-            <div class="form-control">
-                <label class="label cursor-pointer justify-start gap-3">
-                    <input
-                        type="checkbox"
-                        class="toggle toggle-error"
-                        checked={store.last1ShrinkEnabled()}
-                        onChange={(e) => store.setLast1ShrinkEnabled(e.currentTarget.checked)}
-                        disabled={store.isStreaming()}
-                    />
-                    <span class="label-text">Last-1 Shrink</span>
-                </label>
-                <span class="text-xs text-base-content/50 pl-1">
-                    When Top-Half grows, shrink the least-even cluster by 1 (skips clusters at K+2)
                 </span>
             </div>
 
@@ -288,7 +236,8 @@ export function NKClusteringDemo() {
                         </defs>
                         <rect width="100%" height="100%" fill="url(#grid)" />
 
-                        <For each={store.pendingPoints().slice(store.currentPointIndex())}>
+                        {/* Remaining pending points (initial batch, not yet consumed) */}
+                        <For each={remainingPendingPoints()}>
                             {(p) => (
                                 <circle
                                     cx={p.x * canvasSize}
@@ -300,111 +249,171 @@ export function NKClusteringDemo() {
                             )}
                         </For>
 
-                        <For each={store.points()}>
+                        {/* Deferred points in the current replay queue — shown as orange hollow circles */}
+                        <For each={store.replayQueue()}>
                             {(p) => (
-                                <g>
-                                    <Show when={p.isMedoid}>
-                                        <circle
-                                            cx={p.point.x * canvasSize}
-                                            cy={(1 - p.point.y) * canvasSize}
-                                            r={14}
-                                            fill="none"
-                                            stroke={p.medoidColor}
-                                            stroke-width={3}
-                                        />
-                                    </Show>
-                                    <Show when={p.point.id === store.lastAddedPointId()}>
-                                        <circle
-                                            cx={p.point.x * canvasSize}
-                                            cy={(1 - p.point.y) * canvasSize}
-                                            r={12}
-                                            fill="none"
-                                            stroke="#10b981"
-                                            stroke-width={3}
-                                        />
-                                    </Show>
-                                    <Show when={p.point.id === store.lastEvictedPointId()}>
-                                        <circle
-                                            cx={p.point.x * canvasSize}
-                                            cy={(1 - p.point.y) * canvasSize}
-                                            r={14}
-                                            fill="none"
-                                            stroke="#f97316"
-                                            stroke-width={3}
-                                        />
-                                    </Show>
-                                    <circle
-                                        cx={p.point.x * canvasSize}
-                                        cy={(1 - p.point.y) * canvasSize}
-                                        r={p.isMedoid ? 8 : 6}
-                                        fill={p.color}
-                                        stroke={p.isMedoid ? p.medoidColor : 'rgba(0,0,0,0.2)'}
-                                        stroke-width={p.isMedoid ? 2 : 1}
-                                    />
-                                </g>
+                                <circle
+                                    cx={p.x * canvasSize}
+                                    cy={(1 - p.y) * canvasSize}
+                                    r={5}
+                                    fill="none"
+                                    stroke="#f97316"
+                                    stroke-width={1.5}
+                                    stroke-dasharray="3 2"
+                                    style={{ 'pointer-events': 'none' }}
+                                />
                             )}
+                        </For>
+
+                        {/* K-th nearest neighbor distance circles */}
+                        <For each={store.clusters()}>
+                            {(c) => {
+                                if (c.medoidId === null || c.kNNDist === 0) return null
+                                const medoidState = store.points().find(p => p.point.id === c.medoidId)
+                                if (!medoidState) return null
+
+                                return (
+                                    <circle
+                                        cx={medoidState.point.x * canvasSize}
+                                        cy={(1 - medoidState.point.y) * canvasSize}
+                                        r={c.kNNDist * canvasSize}
+                                        fill="none"
+                                        stroke={c.color}
+                                        stroke-width="1.5"
+                                        stroke-dasharray="4 4"
+                                        stroke-opacity="0.6"
+                                        style={{
+                                            'pointer-events': 'none',
+                                            'opacity': (selectedClusterId() === null || selectedClusterId() === c.id) ? 1 : 0.1,
+                                            'transition': 'opacity 0.2s',
+                                        }}
+                                    />
+                                )
+                            }}
+                        </For>
+
+                        {/* Clustered points */}
+                        <For each={store.points()}>
+                            {(p) => {
+                                const isSelected = () => selectedClusterId() === null || selectedClusterId() === p.clusterId
+                                return (
+                                    <g style={{ 'opacity': isSelected() ? 1 : 0.1, 'transition': 'opacity 0.2s' }}>
+                                        <Show when={p.isMedoid}>
+                                            <circle
+                                                cx={p.point.x * canvasSize}
+                                                cy={(1 - p.point.y) * canvasSize}
+                                                r={14}
+                                                fill="none"
+                                                stroke={p.medoidColor}
+                                                stroke-width={3}
+                                            />
+                                        </Show>
+                                        <Show when={p.point.id === store.lastAddedPointId()}>
+                                            <circle
+                                                cx={p.point.x * canvasSize}
+                                                cy={(1 - p.point.y) * canvasSize}
+                                                r={12}
+                                                fill="none"
+                                                stroke="#10b981"
+                                                stroke-width={3}
+                                            />
+                                        </Show>
+                                        <Show when={p.point.id === store.lastEvictedPointId()}>
+                                            <circle
+                                                cx={p.point.x * canvasSize}
+                                                cy={(1 - p.point.y) * canvasSize}
+                                                r={14}
+                                                fill="none"
+                                                stroke="#f97316"
+                                                stroke-width={3}
+                                            />
+                                        </Show>
+                                        <circle
+                                            cx={p.point.x * canvasSize}
+                                            cy={(1 - p.point.y) * canvasSize}
+                                            r={p.isMedoid ? 8 : 6}
+                                            fill={p.color}
+                                            stroke={p.isMedoid ? p.medoidColor : 'rgba(0,0,0,0.2)'}
+                                            stroke-width={p.isMedoid ? 2 : 1}
+                                        />
+                                    </g>
+                                )
+                            }}
                         </For>
                     </svg>
                 </div>
 
-                <Show when={store.pendingPoints().length > 0}>
-                    <div class="space-y-2">
-                        <div>
-                            <div class="flex justify-between text-xs text-base-content/60 mb-1">
-                                <span>Progress</span>
-                                <span>
-                                    {store.currentPointIndex()} / {store.pendingPoints().length}
-                                </span>
-                            </div>
-                            <progress
-                                class="progress progress-primary w-full"
-                                value={store.currentPointIndex()}
-                                max={store.pendingPoints().length}
-                            />
+                {/* Deferred batch progress bar (replaces old progress bar) */}
+                <Show when={store.cancelReplay() && (isInReplayPhase() || store.replayRound() > 0)}>
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs text-base-content/60">
+                            <span class="font-medium">
+                                {store.replayQueueLength() > 0
+                                    ? `Replay Round ${store.replayRound() + 1}`
+                                    : 'Replay Complete'}
+                            </span>
+                            <span class={store.replayQueueLength() > 0 ? 'text-warning' : 'text-success'}>
+                                {store.replayQueueLength() > 0
+                                    ? `${store.replayRoundProcessed()} / ${store.replayRoundTotal()}`
+                                    : 'done'}
+                            </span>
                         </div>
-                        <Show when={store.cancelReplay() && (store.replayQueueLength() > 0 || store.currentPointIndex() >= store.pendingPoints().length)}>
-                            <div>
-                                <div class="flex justify-between text-xs text-base-content/60 mb-1">
-                                    <span>Deferred Points</span>
-                                    <span class={store.replayQueueLength() > 0 ? 'text-warning' : 'text-success'}>
-                                        {store.replayQueueLength() > 0 ? `${store.replayQueueLength()} remaining` : 'done'}
-                                    </span>
-                                </div>
-                                <div class="h-2 w-full bg-base-300 rounded-full overflow-hidden">
-                                    <div
-                                        class={`h-full transition-all duration-300 ${store.replayQueueLength() > 0 ? 'bg-warning' : 'bg-success'}`}
-                                        style={{ width: store.replayQueueLength() > 0 ? '100%' : '0%' }}
-                                    />
-                                </div>
-                            </div>
+                        <Show when={store.replayRoundTotal() > 0}>
+                            <progress
+                                class={`progress w-full ${store.replayQueueLength() > 0 ? 'progress-warning' : 'progress-success'}`}
+                                value={store.replayRoundProcessed()}
+                                max={store.replayRoundTotal()}
+                            />
                         </Show>
+                    </div>
+                </Show>
+
+                {/* Initial batch progress (only while consuming pending points) */}
+                <Show when={store.pendingPoints().length > 0 && store.currentPointIndex() < store.pendingPoints().length}>
+                    <div>
+                        <div class="flex justify-between text-xs text-base-content/60 mb-1">
+                            <span>Initial Points</span>
+                            <span>
+                                {store.currentPointIndex()} / {store.pendingPoints().length}
+                            </span>
+                        </div>
+                        <progress
+                            class="progress progress-primary w-full"
+                            value={store.currentPointIndex()}
+                            max={store.pendingPoints().length}
+                        />
                     </div>
                 </Show>
 
                 <Show when={store.clusters().length > 0}>
                     <div class="flex flex-wrap gap-2 text-sm">
                         <For each={store.clusters()}>
-                            {(cluster) => (
-                                <span class="flex items-center gap-2 px-2 py-1 rounded-lg bg-base-300/50">
-                                    <span class="w-4 h-4 rounded-full" style={{ 'background-color': cluster.color }} />
-                                    <span class="text-base-content/70">
-                                        C{cluster.id} ({cluster.size}/{cluster.maxSize})
-                                    </span>
-                                    <Show when={cluster.isTopHalf}>
-                                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
-                                            top half
+                            {(cluster) => {
+                                const badge = () => maturityBadge[cluster.maturity]
+                                const minEvenness = Math.min(...store.clusters().filter(c => c.size > 1).map(c => c.evenness))
+                                const isWorst = cluster.size > 1 && cluster.evenness === minEvenness && minEvenness < 1
+                                const isSelected = selectedClusterId() === cluster.id
+
+                                return (
+                                    <span
+                                        class={`flex items-center gap-2 px-2 py-1 rounded-lg border cursor-pointer select-none transition-colors ${isSelected ? 'ring ring-primary ring-offset-1 ring-offset-base-300 ' : ''
+                                            }${isWorst ? 'border-error bg-error/10' : 'border-base-content/5 bg-base-300/50 hover:bg-base-300'
+                                            }`}
+                                        onClick={() => setSelectedClusterId(prev => prev === cluster.id ? null : cluster.id)}
+                                    >
+                                        <span class="w-4 h-4 rounded-full" style={{ 'background-color': cluster.color }} />
+                                        <span class="text-base-content/70">
+                                            C{cluster.id} ({cluster.size})
                                         </span>
-                                    </Show>
-                                    <Show when={cluster.isLastOne}>
-                                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
-                                            last-1
+                                        <span class={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${badge().bg} ${badge().text}`}>
+                                            {badge().label}
                                         </span>
-                                    </Show>
-                                    <span class="text-[10px] text-base-content/50 font-mono">
-                                        even {cluster.evenness.toFixed(2)}
+                                        <span class={`text-[10px] font-mono ${isWorst ? 'text-error font-bold' : 'text-base-content/50'}`}>
+                                            even {cluster.evenness.toFixed(2)}
+                                        </span>
                                     </span>
-                                </span>
-                            )}
+                                )
+                            }}
                         </For>
                     </div>
                 </Show>
@@ -414,8 +423,8 @@ export function NKClusteringDemo() {
 
     return (
         <SingleStageLayout
-            title="2D Point NK Clustering"
-            subtitle="Online clustering with bounded cluster sizes. N = base max size, K = neighbors for medoid."
+            title="2D Rival-K Clustering"
+            subtitle="Online clustering with only K — clusters self-regulate via evenness-based eviction."
             backHref="/"
             backLabel="Back to Demos"
             config={ConfigPanel}

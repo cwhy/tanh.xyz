@@ -91,6 +91,12 @@ function HomePage() {
                   href: "/demos/mnist-nk-clustering",
                   thumbnail: nkClusterThumb,
                 },
+                {
+                  title: "2D Rival-K Clustering",
+                  description: "K-only online clustering — clusters self-regulate via evenness-based eviction with no hard size cap.",
+                  href: "/demos/rival-k",
+                  thumbnail: nkClusterThumb,
+                },
               ]}
             />
 

@@ -19,7 +19,10 @@ export interface Cluster {
     id: number
     points: Point[]
     medoidId: number | null
-    cMin: number  // Distance from medoid to furthest point
+    cMin: number  // Distance from center to furthest point
+    kNNDist: number
+    evenness: number
+    maxSize: number
 }
 
 export type CenterType = 'medoid' | 'centroid'
@@ -29,6 +32,8 @@ export interface NKClusteringState {
     n: number  // Max cluster size
     k: number  // K-th neighbor for medoid calculation
     centerType: CenterType  // How to calculate cluster center
+    top1Enabled: boolean
+    last1ShrinkEnabled: boolean
     nextPointId: number
     nextClusterId: number
 }
@@ -138,22 +143,49 @@ export function calculateCenter(points: Point[], k: number, centerType: CenterTy
 }
 
 /**
- * Calculate cMin: distance from medoid to the furthest point
+ * Calculate cMin: distance from center to the furthest point
  */
-export function calculateCMin(medoid: Point, points: Point[]): number {
+export function calculateCMin(center: Point, points: Point[]): number {
     if (points.length === 0) return 0
-    return Math.max(...points.map(p => distance(medoid, p)))
+    return Math.max(...points.map(p => distance(center, p)))
+}
+
+/**
+ * Calculate evenness = d(center, k-th NN) / d(center, furthest).
+ * Returns 1 for very small clusters or zero-radius clusters.
+ */
+export function calculateEvenness(center: Point, points: Point[], k: number, cMin: number): number {
+    if (points.length <= 1 || cMin === 0) return 1
+    if (points.length <= k) return 1
+
+    const kDist = kthNearestNeighborDistance(center, points, k)
+    if (!Number.isFinite(kDist)) return 1
+    return kDist / cMin
 }
 
 /**
  * Update a cluster's medoid and cMin
  */
 function updateClusterMetrics(cluster: Cluster, k: number, centerType: CenterType): void {
-    const medoid = calculateCenter(cluster.points, k, centerType)
-    cluster.medoidId = medoid?.id ?? null
-    if (medoid) {
-        cluster.cMin = calculateCMin(medoid, cluster.points)
+    const center = calculateCenter(cluster.points, k, centerType)
+    cluster.medoidId = center?.id ?? null
+    if (!center) {
+        cluster.cMin = 0
+        cluster.kNNDist = 0
+        cluster.evenness = 1
+        return
     }
+
+    cluster.cMin = calculateCMin(center, cluster.points)
+    if (cluster.points.length <= k || cluster.cMin === 0) {
+        cluster.kNNDist = cluster.cMin
+        cluster.evenness = 1
+        return
+    }
+
+    const kDist = kthNearestNeighborDistance(center, cluster.points, k)
+    cluster.kNNDist = Number.isFinite(kDist) ? kDist : cluster.cMin
+    cluster.evenness = calculateEvenness(center, cluster.points, k, cluster.cMin)
 }
 
 /**
@@ -165,9 +197,51 @@ export function getClusterMedoid(cluster: Cluster): Point | null {
 }
 
 /**
+ * Returns the IDs of clusters in the top half by evenness.
+ * Returns empty set when fewer than 2 clusters exist.
+ */
+function getTopHalfClusterIds(clusters: Cluster[]): Set<number> {
+    if (clusters.length < 2) return new Set()
+    const sorted = [...clusters].sort((a, b) => b.evenness - a.evenness)
+    const halfCount = Math.ceil(sorted.length / 2)
+    return new Set(sorted.slice(0, halfCount).map(c => c.id))
+}
+
+/**
+ * Find the least-even cluster that can still shrink (maxSize > k+2), excluding a given id.
+ */
+function getLeastEvenShrinkable(clusters: Cluster[], k: number, excludeId: number): Cluster | null {
+    let worst: Cluster | null = null
+    for (const c of clusters) {
+        if (c.id === excludeId || c.maxSize <= k + 2) continue
+        if (worst === null || c.evenness < worst.evenness) worst = c
+    }
+    return worst
+}
+
+function getFurthestPointFromCenter(cluster: Cluster, center: Point): Point {
+    let evictedPoint = cluster.points[0]
+    let maxDist = -Infinity
+    for (const p of cluster.points) {
+        const d = distance(p, center)
+        if (d > maxDist) {
+            maxDist = d
+            evictedPoint = p
+        }
+    }
+    return evictedPoint
+}
+
+/**
  * Create initial state for NK clustering
  */
-export function createNKClusteringState(n: number, k: number, centerType: CenterType = 'medoid'): NKClusteringState {
+export function createNKClusteringState(
+    n: number,
+    k: number,
+    centerType: CenterType = 'medoid',
+    top1Enabled: boolean = false,
+    last1ShrinkEnabled: boolean = false
+): NKClusteringState {
     if (k >= n) {
         throw new Error(`K (${k}) must be less than N (${n})`)
     }
@@ -176,6 +250,8 @@ export function createNKClusteringState(n: number, k: number, centerType: Center
         n,
         k,
         centerType,
+        top1Enabled,
+        last1ShrinkEnabled,
         nextPointId: 0,
         nextClusterId: 0,
     }
@@ -211,6 +287,9 @@ export function addPoint(
             points: [point],
             medoidId: point.id,
             cMin: 0,
+            kNNDist: 0,
+            evenness: 1,
+            maxSize: state.n,
         }
         state.clusters.push(cluster)
         return { point, clusterId: cluster.id, evicted: null, newClusterCreated: true }
@@ -235,6 +314,9 @@ export function addExistingPoint(
             points: [point],
             medoidId: point.id,
             cMin: 0,
+            kNNDist: 0,
+            evenness: 1,
+            maxSize: state.n,
         }
         state.clusters.push(cluster)
         return { point, clusterId: cluster.id, evicted: null, newClusterCreated: true }
@@ -253,12 +335,14 @@ function tryPlacePoint(
     triedClusters: Set<number>,
     deferEviction: boolean = false
 ): AddPointResult {
-    // Get clusters sorted by distance to their medoids
+    const topHalfIds = state.top1Enabled ? getTopHalfClusterIds(state.clusters) : new Set<number>()
+
+    // Get clusters sorted by distance to their centers
     const clustersWithDist = state.clusters
         .filter(c => !triedClusters.has(c.id))
         .map(c => {
-            const medoid = getClusterMedoid(c)
-            const dist = medoid ? distance(point, medoid) : Infinity
+            const center = getClusterMedoid(c)
+            const dist = center ? distance(point, center) : Infinity
             return { cluster: c, dist }
         })
         .sort((a, b) => a.dist - b.dist)
@@ -266,27 +350,47 @@ function tryPlacePoint(
     // Try each cluster in order of proximity
     for (const { cluster, dist } of clustersWithDist) {
         // Case 1: Cluster is not full - just add
-        if (cluster.points.length < state.n) {
+        if (cluster.points.length < cluster.maxSize) {
             cluster.points.push(point)
             updateClusterMetrics(cluster, state.k, state.centerType)
             return { point, clusterId: cluster.id, evicted: null, newClusterCreated: false }
         }
 
         // Case 2: Cluster is full - check if point can displace someone
-        const medoid = getClusterMedoid(cluster)
-        if (medoid && dist < cluster.cMin) {
+        const center = getClusterMedoid(cluster)
+        if (center && dist < cluster.cMin) {
+            // Top-half mechanism: top 50% even clusters grow instead of evicting.
+            if (topHalfIds.has(cluster.id)) {
+                cluster.maxSize++
+                cluster.points.push(point)
+                updateClusterMetrics(cluster, state.k, state.centerType)
+
+                // Last-1 shrink mechanism: shrink least-even shrinkable cluster.
+                if (state.last1ShrinkEnabled) {
+                    const target = getLeastEvenShrinkable(state.clusters, state.k, cluster.id)
+                    if (target) {
+                        target.maxSize--
+                        if (target.points.length > target.maxSize) {
+                            const targetCenter = getClusterMedoid(target)
+                            if (targetCenter) {
+                                const targetEvicted = getFurthestPointFromCenter(target, targetCenter)
+                                target.points = target.points.filter(p => p.id !== targetEvicted.id)
+                                updateClusterMetrics(target, state.k, state.centerType)
+                                tryPlacePoint(state, targetEvicted, new Set([target.id]), false)
+                            }
+                        } else {
+                            updateClusterMetrics(target, state.k, state.centerType)
+                        }
+                    }
+                }
+
+                return { point, clusterId: cluster.id, evicted: null, newClusterCreated: false }
+            }
+
             // Point is closer than the furthest point - it can join
 
-            // Find the point to evict (furthest from medoid)
-            let evictedPoint = cluster.points[0]
-            let maxDist = 0
-            for (const p of cluster.points) {
-                const d = distance(p, medoid)
-                if (d > maxDist) {
-                    maxDist = d
-                    evictedPoint = p
-                }
-            }
+            // Find the point to evict (furthest from center)
+            const evictedPoint = getFurthestPointFromCenter(cluster, center)
 
             // Swap: add new point, remove evicted
             cluster.points = cluster.points.filter(p => p.id !== evictedPoint.id)
@@ -325,6 +429,9 @@ function tryPlacePoint(
         points: [point],
         medoidId: point.id,
         cMin: 0,
+        kNNDist: 0,
+        evenness: 1,
+        maxSize: state.n,
     }
     state.clusters.push(newCluster)
     return { point, clusterId: newCluster.id, evicted: null, newClusterCreated: true }

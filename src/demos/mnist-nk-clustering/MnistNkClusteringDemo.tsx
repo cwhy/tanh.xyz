@@ -181,6 +181,13 @@ export function MnistNkClusteringDemo(): JSX.Element {
 
             </Show>
 
+            <Show when={store.deferEviction() && store.replayQueueLength() > 0}>
+                <div class="stat bg-warning/10 rounded-xl border border-warning/20 p-3">
+                    <div class="stat-title text-xs opacity-60">Replay Queue</div>
+                    <div class="stat-value text-xl text-warning">{store.replayQueueLength()}</div>
+                </div>
+            </Show>
+
             {/* Loading progress */}
             <Show when={store.loadStatus() === 'loading'}>
                 <div class="rounded-xl bg-base-300/50 border border-base-content/5 p-3 space-y-2">
@@ -268,6 +275,23 @@ export function MnistNkClusteringDemo(): JSX.Element {
                 rangeClass="range range-accent range-sm"
             />
 
+            {/* Defer eviction toggle */}
+            <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-3">
+                    <input
+                        type="checkbox"
+                        class="toggle toggle-warning"
+                        checked={store.deferEviction()}
+                        onChange={(e) => store.setDeferEviction(e.currentTarget.checked)}
+                        disabled={store.isStreaming() || store.loadStatus() === 'loading'}
+                    />
+                    <span class="label-text">Defer Evicted Points</span>
+                </label>
+                <span class="text-xs text-base-content/50 pl-1">
+                    When on, evicted points replay in additional rounds until none remain
+                </span>
+            </div>
+
             {/* Top-half mechanism toggle */}
             <div class="form-control">
                 <label class="label cursor-pointer justify-start gap-3">
@@ -335,7 +359,7 @@ export function MnistNkClusteringDemo(): JSX.Element {
                         <button
                             class="btn btn-secondary flex-1"
                             onClick={() => store.startStreaming()}
-                            disabled={store.loadStatus() !== 'ready'}
+                            disabled={store.loadStatus() !== 'ready' || (store.processedCount() >= store.totalCount() && store.replayQueueLength() === 0)}
                         >
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -348,7 +372,7 @@ export function MnistNkClusteringDemo(): JSX.Element {
                     <button
                         class="btn btn-ghost"
                         onClick={() => { void store.stepOnce() }}
-                        disabled={store.isStreaming() || store.loadStatus() !== 'ready'}
+                        disabled={store.isStreaming() || store.loadStatus() !== 'ready' || (store.processedCount() >= store.totalCount() && store.replayQueueLength() === 0)}
                         title="Step one image"
                     >
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -452,6 +476,22 @@ export function MnistNkClusteringDemo(): JSX.Element {
                             value={store.processedCount()}
                             max={store.totalCount()}
                         />
+                    </Show>
+                    <Show when={store.deferEviction() && (store.replayQueueLength() > 0 || store.processedCount() >= store.totalCount())}>
+                        <div>
+                            <div class="flex justify-between text-xs text-base-content/60 mb-1">
+                                <span>Deferred Points</span>
+                                <span class={store.replayQueueLength() > 0 ? 'text-warning' : 'text-success'}>
+                                    {store.replayQueueLength() > 0 ? `${store.replayQueueLength()} remaining` : 'done'}
+                                </span>
+                            </div>
+                            <div class="h-1.5 w-full bg-base-300 rounded-full overflow-hidden">
+                                <div
+                                    class={`h-full transition-all duration-300 ${store.replayQueueLength() > 0 ? 'bg-warning' : 'bg-success'}`}
+                                    style={{ width: store.replayQueueLength() > 0 ? '100%' : '0%' }}
+                                />
+                            </div>
+                        </div>
                     </Show>
                 </div>
 
