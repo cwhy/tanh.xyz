@@ -1,22 +1,21 @@
 import { createFileRoute } from '@tanstack/solid-router'
 import { DemoCard } from '../components/DemoCard'
+import { SeriesCard } from '../components/SeriesCard'
 import twoMoonThumb from '../demos/two-moons-clustering/thumbnail.svg'
 import nkClusterThumb from '../demos/nk-clustering/thumbnail.svg'
 import mnistThumb from '../demos/mnist-training/thumbnail.svg'
 import additionThumb from '../demos/addition-grokking/thumbnail.svg'
 import linearSystemsThumb from '../demos/linear-systems/thumbnail.svg'
-// Reuse NK clustering thumbnail for MNIST NK demo
-const mnistNkThumb = nkClusterThumb
 export const Route = createFileRoute('/')({ component: HomePage })
 
 function HomePage() {
   return (
-    <div class="min-h-screen bg-base-200" style={{
+    <div class="min-h-screen bg-base-200 flex flex-col" style={{
       'background-image': 'radial-gradient(var(--color-base-300) 1px, transparent 1px)',
       'background-size': '24px 24px'
     }}>
       {/* Content */}
-      <div class="relative font-sans text-base-content">
+      <div class="relative font-sans text-base-content flex flex-col flex-1">
         {/* Hero Section */}
         <header class="pt-12 pb-8 px-6">
           <div class="max-w-5xl mx-auto">
@@ -65,8 +64,8 @@ function HomePage() {
         </header>
 
         {/* Demos Grid */}
-        <main class="mx-auto w-full px-6 pb-20 lg:w-[85%]">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <main class="mx-auto w-full px-6 pb-20 max-w-[1600px] 2xl:max-w-[1800px]">
+          <div class="flex flex-wrap justify-center gap-6 md:gap-8 xl:gap-10">
             <DemoCard
               title="Two-Moon Classification"
               description="Train a neural network to classify two interleaving half-moon shapes. Watch the decision boundary evolve in real-time as the network learns."
@@ -75,20 +74,24 @@ function HomePage() {
               thumbnail={twoMoonThumb}
             />
 
-            <DemoCard
-              title="NK Clustering"
-              description="Online clustering algorithm with bounded cluster sizes. Watch points stream in one-by-one and get assigned to clusters in real-time."
-              href="/demos/nk-clustering"
-              status="ready"
+            <SeriesCard
+              seriesName="Online Clustering"
+              description="Online clustering algorithms with bounded cluster sizes. Explore different data domains and visualizations."
               thumbnail={nkClusterThumb}
-            />
-
-            <DemoCard
-              title="MNIST NK Clustering"
-              description="NK clustering on MNIST digits with JAX-JS accelerated distance computation. Clusters shown as image grids sorted by tightness, with top-1 growth mechanism."
-              href="/demos/mnist-nk-clustering"
-              status="ready"
-              thumbnail={mnistNkThumb}
+              demos={[
+                {
+                  title: "2D Point NK Clustering",
+                  description: "Watch points stream in one-by-one and get assigned to clusters in real-time with a 2D scatter visualization.",
+                  href: "/demos/nk-clustering",
+                  thumbnail: nkClusterThumb,
+                },
+                {
+                  title: "MNIST Digit NK Clustering",
+                  description: "NK clustering on MNIST digits with JAX-JS accelerated distance computation. Clusters shown as image grids sorted by tightness.",
+                  href: "/demos/mnist-nk-clustering",
+                  thumbnail: nkClusterThumb,
+                },
+              ]}
             />
 
             <DemoCard
@@ -131,7 +134,7 @@ function HomePage() {
         </main>
 
         {/* Footer */}
-        <footer class="border-t-2 border-dashed border-base-content py-8">
+        <footer class="border-t-2 border-dashed border-base-content py-8 mt-auto">
           <div class="container mx-auto px-4 text-center">
             <p class="text-sm">
               Built with{' '}

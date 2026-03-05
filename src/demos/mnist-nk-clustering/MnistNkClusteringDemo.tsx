@@ -497,7 +497,7 @@ export function MnistNkClusteringDemo(): JSX.Element {
 
     return (
         <SingleStageFullLayout
-            title="MNIST NK Clustering"
+            title="MNIST Digit NK Clustering"
             subtitle="Online NK clustering on handwritten digits"
             backHref="/"
             backLabel="Home"

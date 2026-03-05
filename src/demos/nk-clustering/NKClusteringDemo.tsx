@@ -369,7 +369,7 @@ export function NKClusteringDemo() {
 
     return (
         <SingleStageLayout
-            title="NK Clustering"
+            title="2D Point NK Clustering"
             subtitle="Online clustering with bounded cluster sizes. N = max size, K = neighbors for medoid."
             backHref="/"
             backLabel="Back to Demos"
