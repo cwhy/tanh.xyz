@@ -80,6 +80,12 @@ function HomePage() {
               thumbnail={nkClusterThumb}
               demos={[
                 {
+                  title: "2D Online K-Means",
+                  description: "Streaming k-means — each incoming point joins its nearest centroid, updating the mean incrementally.",
+                  href: "/demos/online-k-means",
+                  thumbnail: nkClusterThumb,
+                },
+                {
                   title: "2D Point NK Clustering",
                   description: "Watch points stream in one-by-one and get assigned to clusters in real-time with a 2D scatter visualization.",
                   href: "/demos/nk-clustering",

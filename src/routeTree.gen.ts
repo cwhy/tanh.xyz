@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemosTwoMoonRouteImport } from './routes/demos/two-moon'
 import { Route as DemosRivalKRouteImport } from './routes/demos/rival-k'
+import { Route as DemosOnlineKMeansRouteImport } from './routes/demos/online-k-means'
 import { Route as DemosNkClusteringRouteImport } from './routes/demos/nk-clustering'
 import { Route as DemosMnistTrainingRouteImport } from './routes/demos/mnist-training'
 import { Route as DemosMnistNkClusteringRouteImport } from './routes/demos/mnist-nk-clustering'
@@ -31,6 +32,11 @@ const DemosTwoMoonRoute = DemosTwoMoonRouteImport.update({
 const DemosRivalKRoute = DemosRivalKRouteImport.update({
   id: '/demos/rival-k',
   path: '/demos/rival-k',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemosOnlineKMeansRoute = DemosOnlineKMeansRouteImport.update({
+  id: '/demos/online-k-means',
+  path: '/demos/online-k-means',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemosNkClusteringRoute = DemosNkClusteringRouteImport.update({
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
   '/demos/mnist-training': typeof DemosMnistTrainingRoute
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
+  '/demos/online-k-means': typeof DemosOnlineKMeansRoute
   '/demos/rival-k': typeof DemosRivalKRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
   '/demos/mnist-training': typeof DemosMnistTrainingRoute
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
+  '/demos/online-k-means': typeof DemosOnlineKMeansRoute
   '/demos/rival-k': typeof DemosRivalKRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
   '/demos/mnist-training': typeof DemosMnistTrainingRoute
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
+  '/demos/online-k-means': typeof DemosOnlineKMeansRoute
   '/demos/rival-k': typeof DemosRivalKRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/demos/mnist-nk-clustering'
     | '/demos/mnist-training'
     | '/demos/nk-clustering'
+    | '/demos/online-k-means'
     | '/demos/rival-k'
     | '/demos/two-moon'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/demos/mnist-nk-clustering'
     | '/demos/mnist-training'
     | '/demos/nk-clustering'
+    | '/demos/online-k-means'
     | '/demos/rival-k'
     | '/demos/two-moon'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/demos/mnist-nk-clustering'
     | '/demos/mnist-training'
     | '/demos/nk-clustering'
+    | '/demos/online-k-means'
     | '/demos/rival-k'
     | '/demos/two-moon'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   DemosMnistNkClusteringRoute: typeof DemosMnistNkClusteringRoute
   DemosMnistTrainingRoute: typeof DemosMnistTrainingRoute
   DemosNkClusteringRoute: typeof DemosNkClusteringRoute
+  DemosOnlineKMeansRoute: typeof DemosOnlineKMeansRoute
   DemosRivalKRoute: typeof DemosRivalKRoute
   DemosTwoMoonRoute: typeof DemosTwoMoonRoute
 }
@@ -155,6 +168,13 @@ declare module '@tanstack/solid-router' {
       path: '/demos/rival-k'
       fullPath: '/demos/rival-k'
       preLoaderRoute: typeof DemosRivalKRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demos/online-k-means': {
+      id: '/demos/online-k-means'
+      path: '/demos/online-k-means'
+      fullPath: '/demos/online-k-means'
+      preLoaderRoute: typeof DemosOnlineKMeansRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demos/nk-clustering': {
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemosMnistNkClusteringRoute: DemosMnistNkClusteringRoute,
   DemosMnistTrainingRoute: DemosMnistTrainingRoute,
   DemosNkClusteringRoute: DemosNkClusteringRoute,
+  DemosOnlineKMeansRoute: DemosOnlineKMeansRoute,
   DemosRivalKRoute: DemosRivalKRoute,
   DemosTwoMoonRoute: DemosTwoMoonRoute,
 }
