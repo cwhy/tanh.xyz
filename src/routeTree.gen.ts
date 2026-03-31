@@ -17,6 +17,8 @@ import { Route as DemosNkClusteringRouteImport } from './routes/demos/nk-cluster
 import { Route as DemosMnistTrainingRouteImport } from './routes/demos/mnist-training'
 import { Route as DemosMnistNkClusteringRouteImport } from './routes/demos/mnist-nk-clustering'
 import { Route as DemosLinearSystemsRouteImport } from './routes/demos/linear-systems'
+import { Route as DemosDenseAssociativeMemoryRouteImport } from './routes/demos/dense-associative-memory'
+import { Route as DemosDamTestRouteImport } from './routes/demos/dam-test'
 import { Route as DemosAdditionGrokkingRouteImport } from './routes/demos/addition-grokking'
 
 const IndexRoute = IndexRouteImport.update({
@@ -59,6 +61,17 @@ const DemosLinearSystemsRoute = DemosLinearSystemsRouteImport.update({
   path: '/demos/linear-systems',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemosDenseAssociativeMemoryRoute =
+  DemosDenseAssociativeMemoryRouteImport.update({
+    id: '/demos/dense-associative-memory',
+    path: '/demos/dense-associative-memory',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DemosDamTestRoute = DemosDamTestRouteImport.update({
+  id: '/demos/dam-test',
+  path: '/demos/dam-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemosAdditionGrokkingRoute = DemosAdditionGrokkingRouteImport.update({
   id: '/demos/addition-grokking',
   path: '/demos/addition-grokking',
@@ -68,6 +81,8 @@ const DemosAdditionGrokkingRoute = DemosAdditionGrokkingRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/demos/addition-grokking': typeof DemosAdditionGrokkingRoute
+  '/demos/dam-test': typeof DemosDamTestRoute
+  '/demos/dense-associative-memory': typeof DemosDenseAssociativeMemoryRoute
   '/demos/linear-systems': typeof DemosLinearSystemsRoute
   '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
   '/demos/mnist-training': typeof DemosMnistTrainingRoute
@@ -79,6 +94,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/demos/addition-grokking': typeof DemosAdditionGrokkingRoute
+  '/demos/dam-test': typeof DemosDamTestRoute
+  '/demos/dense-associative-memory': typeof DemosDenseAssociativeMemoryRoute
   '/demos/linear-systems': typeof DemosLinearSystemsRoute
   '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
   '/demos/mnist-training': typeof DemosMnistTrainingRoute
@@ -91,6 +108,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/demos/addition-grokking': typeof DemosAdditionGrokkingRoute
+  '/demos/dam-test': typeof DemosDamTestRoute
+  '/demos/dense-associative-memory': typeof DemosDenseAssociativeMemoryRoute
   '/demos/linear-systems': typeof DemosLinearSystemsRoute
   '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
   '/demos/mnist-training': typeof DemosMnistTrainingRoute
@@ -104,6 +123,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/demos/addition-grokking'
+    | '/demos/dam-test'
+    | '/demos/dense-associative-memory'
     | '/demos/linear-systems'
     | '/demos/mnist-nk-clustering'
     | '/demos/mnist-training'
@@ -115,6 +136,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/demos/addition-grokking'
+    | '/demos/dam-test'
+    | '/demos/dense-associative-memory'
     | '/demos/linear-systems'
     | '/demos/mnist-nk-clustering'
     | '/demos/mnist-training'
@@ -126,6 +149,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/demos/addition-grokking'
+    | '/demos/dam-test'
+    | '/demos/dense-associative-memory'
     | '/demos/linear-systems'
     | '/demos/mnist-nk-clustering'
     | '/demos/mnist-training'
@@ -138,6 +163,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DemosAdditionGrokkingRoute: typeof DemosAdditionGrokkingRoute
+  DemosDamTestRoute: typeof DemosDamTestRoute
+  DemosDenseAssociativeMemoryRoute: typeof DemosDenseAssociativeMemoryRoute
   DemosLinearSystemsRoute: typeof DemosLinearSystemsRoute
   DemosMnistNkClusteringRoute: typeof DemosMnistNkClusteringRoute
   DemosMnistTrainingRoute: typeof DemosMnistTrainingRoute
@@ -205,6 +232,20 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof DemosLinearSystemsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demos/dense-associative-memory': {
+      id: '/demos/dense-associative-memory'
+      path: '/demos/dense-associative-memory'
+      fullPath: '/demos/dense-associative-memory'
+      preLoaderRoute: typeof DemosDenseAssociativeMemoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demos/dam-test': {
+      id: '/demos/dam-test'
+      path: '/demos/dam-test'
+      fullPath: '/demos/dam-test'
+      preLoaderRoute: typeof DemosDamTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demos/addition-grokking': {
       id: '/demos/addition-grokking'
       path: '/demos/addition-grokking'
@@ -218,6 +259,8 @@ declare module '@tanstack/solid-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DemosAdditionGrokkingRoute: DemosAdditionGrokkingRoute,
+  DemosDamTestRoute: DemosDamTestRoute,
+  DemosDenseAssociativeMemoryRoute: DemosDenseAssociativeMemoryRoute,
   DemosLinearSystemsRoute: DemosLinearSystemsRoute,
   DemosMnistNkClusteringRoute: DemosMnistNkClusteringRoute,
   DemosMnistTrainingRoute: DemosMnistTrainingRoute,

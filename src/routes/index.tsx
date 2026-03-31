@@ -6,6 +6,7 @@ import nkClusterThumb from '../demos/nk-clustering/thumbnail.svg'
 import mnistThumb from '../demos/mnist-training/thumbnail.svg'
 import additionThumb from '../demos/addition-grokking/thumbnail.svg'
 import linearSystemsThumb from '../demos/linear-systems/thumbnail.svg'
+import damThumb from '../demos/dense-associative-memory/thumbnail.svg'
 export const Route = createFileRoute('/')({ component: HomePage })
 
 function HomePage() {
@@ -127,6 +128,13 @@ function HomePage() {
               href="/demos/linear-systems"
               status="ready"
               thumbnail={linearSystemsThumb}
+            />
+            <DemoCard
+              title="Dense Associative Memory"
+              description="Explore biologically plausible memory networks with threshold nonlinearity. Watch how noisy images are recalled step by step through attractor dynamics."
+              href="/demos/dense-associative-memory"
+              status="wip"
+              thumbnail={damThumb}
             />
 
             <DemoCard

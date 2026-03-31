@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+    <!-- Connections -->
+    <path d="M 80 160 L 120 80 M 80 160 L 200 80 M 80 160 L 280 80 M 140 160 L 120 80 M 140 160 L 200 80 M 140 160 L 280 80 M 200 160 L 120 80 M 200 160 L 200 80 M 200 160 L 280 80 M 260 160 L 120 80 M 260 160 L 200 80 M 260 160 L 280 80 M 320 160 L 120 80 M 320 160 L 200 80 M 320 160 L 280 80" stroke="#cbd5e1" stroke-width="4" stroke-linecap="round" />
+    
+    <!-- Highlighted path -->
+    <path d="M 140 160 L 200 80 L 260 160 M 200 160 L 280 80 L 320 160" stroke="#10b981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <!-- Top nodes (hidden) -->
+    <circle cx="120" cy="80" r="16" fill="#fff" stroke="#2d2d2d" stroke-width="6" />
+    <circle cx="200" cy="80" r="16" fill="#fff" stroke="#2d2d2d" stroke-width="6" />
+    <circle cx="280" cy="80" r="16" fill="#fff" stroke="#2d2d2d" stroke-width="6" />
+
+    <!-- Bottom nodes (visible) -->
+    <circle cx="80" cy="160" r="12" fill="#fff" stroke="#2d2d2d" stroke-width="6" />
+    <circle cx="140" cy="160" r="12" fill="#fff" stroke="#2d2d2d" stroke-width="6" />
+    <circle cx="200" cy="160" r="12" fill="#fff" stroke="#2d2d2d" stroke-width="6" />
+    <circle cx="260" cy="160" r="12" fill="#fff" stroke="#2d2d2d" stroke-width="6" />
+    <circle cx="320" cy="160" r="12" fill="#fff" stroke="#2d2d2d" stroke-width="6" />
+    
+    <!-- Highlight nodes -->
+    <circle cx="200" cy="80" r="10" fill="#10b981" />
+    <circle cx="280" cy="80" r="10" fill="#10b981" />
+    
+    <circle cx="140" cy="160" r="6" fill="#10b981" />
+    <circle cx="200" cy="160" r="6" fill="#10b981" />
+    <circle cx="260" cy="160" r="6" fill="#10b981" />
+    <circle cx="320" cy="160" r="6" fill="#10b981" />
+</svg>

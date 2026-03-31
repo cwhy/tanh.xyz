@@ -6,7 +6,7 @@ interface DemoCardProps {
     description: string
     href: string
     thumbnail?: string
-    status?: 'ready' | 'coming-soon'
+    status?: 'ready' | 'coming-soon' | 'wip'
 }
 
 export function DemoCard(props: DemoCardProps) {
@@ -63,9 +63,14 @@ export function DemoCard(props: DemoCardProps) {
                             <div class="flex-1 h-full flex flex-col">
                                 <h3 class="card-title text-base sm:text-lg lg:text-xl font-heading font-bold mb-2 flex items-center gap-2">
                                     {props.title}
-                                    <Show when={!isReady()}>
+                                    <Show when={props.status === 'coming-soon'}>
                                         <span class="badge badge-sm bg-base-300 border-base-content/20 text-[10px] sm:text-xs">
                                             Coming Soon
+                                        </span>
+                                    </Show>
+                                    <Show when={props.status === 'wip'}>
+                                        <span class="badge badge-sm bg-warning/20 border-warning text-[10px] sm:text-xs" style={{ color: '#d97706' }}>
+                                            WIP
                                         </span>
                                     </Show>
                                 </h3>
