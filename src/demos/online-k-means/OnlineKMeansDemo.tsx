@@ -46,8 +46,6 @@ function getEquationsHtml(algorithm: AlgorithmType, metric: DistanceMetric): str
     const bias = '<msub><mi>w</mi><mrow><mn>0</mn><mi>k</mi></mrow></msub>'
     const delta = '<mi mathvariant="normal">Δ</mi>'
 
-    const xi = metric === 'angular' ? xhat : xbold
-
     // Bias update (shared by all SoftHebb variants)
     const biasUpdate = eq(
         `<mrow>${delta}${bias}<mo>=</mo>${eta}<mo>⋅</mo>` +

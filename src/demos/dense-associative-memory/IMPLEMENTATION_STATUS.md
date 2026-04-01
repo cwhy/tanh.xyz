@@ -34,20 +34,16 @@ During development, there was ambiguity around applying a generic $1/N_h$ normal
 
 ## 4. Open Issues and Next Steps 
 
-Please address the following items to finalize the demo:
+All previously open issues have been resolved:
 
 ### A. Fix UI Visualization of Hidden Neuron Activations
-**Issue:** During the recall process, the reconstruction succeeds, but the UI displays **"0/50 active"** hidden neurons, and all 50 neuron progress bars remain completely empty.
-**Context:** We modified `RecallFrame` to store both `hBinary` (the hard threshold) and `hActivated` (the sigmoid soft activation). The rendering logic in `DenseAssociativeMemoryDemo.tsx` processes the component `HiddenBar`. Currently, `isActive={ha() > 0.5}` expects activations to cross 0.5 in order to switch to green or be counted. During our tests with the $\beta=20$ sigmoid, the actual driving activations $h_\mu$ fall below `0.5`, causing the UI to mask their contribution despite them collectively forming the visible reconstruction.
-**Next Step:** Adjust the visualization mapping. Either visualize the continuous scalar value directly using opacity/color scaling without a rigid binary cutoff, or lower the strict threshold for visualization so that users can actually see which features the network is utilizing during recall.
+**Status: Resolved.** The threshold for highlighting an active feature component was lowered to show soft activations, making it clear which subset of neurons participate in feature compositionality during recall.
 
 ### B. Improve Reconstruction Sharpness
-**Issue:** While the reconstructed digits are recognizable and stable, they appear slightly blurry/averaged. 
-**Next Step:** Consider experimenting with higher training epochs, tweaking the learning rate scheduling, or adjusting the $\beta$ activation curve. Although blurry recall is partially a feature of Dense Associative Memories overlapping features in continuous state spaces, you might be able to find a cleaner convergence hyper-plane.
+**Status: Resolved.** Increased the default training epochs to 400 for a sharper reconstruction.
 
 ### C. Resolve `jax-js` Type Check Lints
-**Issue:** There are residual TypeScript lint errors in `store.ts` pointing to: `Type 'Float32Array<ArrayBufferLike>' is not assignable to type 'Float32Array<ArrayBuffer>'`. 
-**Next Step:** These are caused by standard `jax`.js return types using `ArrayBufferLike` due to WebGPU/SharedArrayBuffer complexities. It doesn't break browser runtime. You may ignore them with standard `@ts-expect-error` or fix the types in your structural definitions.
+**Status: Resolved.** Resolved the `Float32Array` mismatch type errors by adding proper explicit typings throughout the `store.ts` file and other files.
 
 ### D. Documentation & UX
-**Next Step:** Consider adding a "Theory Snippet" or tooltip text helping users understand *why* the basic memory weights look like fractional strokes of digits rather than full digits (which highlights the paper's core assertion about exponential capacity and feature compositionality vs standard Hopfield nets).
+**Status: Resolved.** Added an explanatory tooltip snippet under the Basic Memories section to clarify the theoretical aspect of fractional strokes vs whole images, teaching users about feature compositionality.

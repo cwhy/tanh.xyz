@@ -83,7 +83,7 @@ export function createDamStore() {
     // Paper defaults: Nh=50, M=60000 for MNIST, θ learned ≈ 0.21
     const [numHidden, setNumHidden] = createSignal(50)
     const [numMemories, setNumMemories] = createSignal(60000)
-    const [trainEpochs, setTrainEpochs] = createSignal(200)
+    const [trainEpochs, setTrainEpochs] = createSignal(400)
     const [learningRate, setLearningRate] = createSignal(0.005)
     const [noiseLevel, setNoiseLevel] = createSignal(0.5)
     const [tauRatio, setTauRatio] = createSignal(10)
@@ -187,9 +187,26 @@ export function createDamStore() {
                 const result = await trainStep(trainParams, currentOptState, solver, batchTensor)
                 trainParams = result.params
                 currentOptState = result.optState
+                
+                let basics: Float32Array[] | undefined
+                let partialTheta: number | undefined
+                
+                // Periodically extract basic memories to visualize training progress
+                if (epoch === 0 || epoch % 5 === 0) {
+                    const tempXi = new Float32Array(await trainParams.xi.ref.data() as ArrayLike<number>)
+                    partialTheta = (await trainParams.theta.ref.jsAsync() as number[])[0]
+                    basics = []
+                    for (let mu = 0; mu < Nh; mu++) {
+                        basics.push(extractBasicMemory(tempXi, Nv, Nh, mu))
+                    }
+                    xiData = tempXi 
+                }
+
                 setState(produce(s => {
                     s.trainLosses.push(result.loss)
                     s.trainEpochsDone = epoch + 1
+                    if (basics) s.basicMemoryImages = basics
+                    if (partialTheta !== undefined) s.learnedTheta = partialTheta
                 }))
 
                 // Yield to UI thread periodically
@@ -263,7 +280,7 @@ export function createDamStore() {
 
         for (let step = 1; step <= steps; step++) {
             const result = recallStep(xiData, theta, v, Nv, Nh, ratio, recallBeta())
-            v = result.v
+            v = result.v as any
             frames.push({
                 visible: new Float32Array(result.v),
                 hBinary: new Float32Array(result.hBinary),

@@ -354,7 +354,7 @@ export function DenseAssociativeMemoryDemo() {
                             {/* Hidden neuron activations */}
                             <div class="flex-1 min-w-[200px] max-w-[280px]">
                                 <div class="text-xs font-semibold mb-2 opacity-70" style={{ color: '#2d2d2d' }}>
-                                    Hidden Neurons ({currentFrame()?.hActivated.reduce((a, b) => a + (b > 0.5 ? 1 : 0), 0) ?? 0}/{store.numHidden()} active)
+                                    Hidden Neurons ({currentFrame()?.hActivated.reduce((a, b) => a + (b > 0.05 ? 1 : 0), 0) ?? 0}/{store.numHidden()} active)
                                 </div>
                                 <div class="flex flex-col gap-0.5 max-h-[300px] overflow-y-auto pr-1">
                                     <Show when={currentFrame()}>
@@ -365,7 +365,7 @@ export function DenseAssociativeMemoryDemo() {
                                                         hVal={ha()}
                                                         hBinary={frame().hBinary[i]}
                                                         index={i}
-                                                        isActive={ha() > 0.5}
+                                                        isActive={ha() > 0.05}
                                                     />
                                                 )}
                                             </Index>
@@ -379,9 +379,18 @@ export function DenseAssociativeMemoryDemo() {
                     {/* Basic memories grid */}
                     <Show when={state.basicMemoryImages.length > 0}>
                         <div>
-                            <div class="text-sm font-semibold mb-2" style={{ color: '#2d2d2d' }}>
+                            <div class="text-sm font-semibold" style={{ color: '#2d2d2d' }}>
                                 Basic Memories (ξ columns) — {state.basicMemoryImages.length} hidden neurons
                             </div>
+                            
+                            <div class="my-3 p-3 rounded-lg text-xs leading-relaxed" style={{ background: 'rgba(56, 189, 248, 0.1)', color: '#0369a1', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+                                <strong class="block mb-1 flex items-center gap-1.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    Theory Note: Feature Compositionality
+                                </strong>
+                                Unlike standard Hopfield networks that store entire patterns as separate attractors, this high-capacity Dense Associative Memory learns a distributed, compositional representation. The basic memories ($\xi$ columns) resemble fractional pencil strokes or digit fragments rather than full numbers. During recall, the network reconstructs a complete memory by activating a sparse combination of these features, granting it exponential storage capacity.
+                            </div>
+
                             <div class="flex flex-wrap gap-1.5">
                                 <Index each={state.basicMemoryImages}>
                                     {(pixels, i) => {
@@ -518,12 +527,12 @@ export function DenseAssociativeMemoryDemo() {
                     label="Training Epochs"
                     value={store.trainEpochs()}
                     min={10}
-                    max={500}
-                    step={10}
+                    max={2000}
+                    step={50}
                     onChange={v => store.setTrainEpochs(Math.round(v))}
                     disabled={state.isTraining}
                     minLabel="10"
-                    maxLabel="500"
+                    maxLabel="2000"
                 />
 
                 <ConfigSlider

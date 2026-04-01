@@ -7,7 +7,6 @@ import { createStore, produce } from 'solid-js/store'
 import {
     createOnlineKMeansState,
     addPoint,
-    resetOnlineKMeansState,
     clusterRadius,
     centroidAngle,
     computeAngularBoundaries,

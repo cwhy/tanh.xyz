@@ -177,7 +177,7 @@ async function runTests() {
     const recallMSEs: number[] = []
     for (let step = 0; step < RECALL_STEPS; step++) {
         const result = recallStep(xiData, thetaFinal, v, Nv, Nh, TAU_RATIO)
-        v = result.v
+        v = result.v as any
         const currentMSE = mse(v, testImage)
         recallMSEs.push(currentMSE)
 
@@ -207,7 +207,7 @@ async function runTests() {
 
     for (let step = 0; step < RECALL_STEPS; step++) {
         const result = recallStep(xiData, thetaFinal, vClean, Nv, Nh, TAU_RATIO)
-        vClean = result.v
+        vClean = result.v as any
 
         if (step % 5 === 0 || step === RECALL_STEPS - 1) {
             const currentMSE = mse(vClean, testImage)
@@ -230,7 +230,7 @@ async function runTests() {
         let vR = new Float32Array(noisySrc)
         for (let step = 0; step < RECALL_STEPS; step++) {
             const result = recallStep(xiData, thetaFinal, vR, Nv, Nh, TAU_RATIO)
-            vR = result.v
+            vR = result.v as any
         }
         const finalMSE = mse(vR, src)
         const label = memoryLabels[idx]
