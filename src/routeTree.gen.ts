@@ -14,6 +14,7 @@ import { Route as DemosTwoMoonRouteImport } from './routes/demos/two-moon'
 import { Route as DemosRivalKRouteImport } from './routes/demos/rival-k'
 import { Route as DemosOnlineKMeansRouteImport } from './routes/demos/online-k-means'
 import { Route as DemosNkClusteringRouteImport } from './routes/demos/nk-clustering'
+import { Route as DemosNeedleRouteImport } from './routes/demos/needle'
 import { Route as DemosMnistTrainingRouteImport } from './routes/demos/mnist-training'
 import { Route as DemosMnistNkClusteringRouteImport } from './routes/demos/mnist-nk-clustering'
 import { Route as DemosLinearSystemsRouteImport } from './routes/demos/linear-systems'
@@ -44,6 +45,11 @@ const DemosOnlineKMeansRoute = DemosOnlineKMeansRouteImport.update({
 const DemosNkClusteringRoute = DemosNkClusteringRouteImport.update({
   id: '/demos/nk-clustering',
   path: '/demos/nk-clustering',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemosNeedleRoute = DemosNeedleRouteImport.update({
+  id: '/demos/needle',
+  path: '/demos/needle',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemosMnistTrainingRoute = DemosMnistTrainingRouteImport.update({
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/demos/linear-systems': typeof DemosLinearSystemsRoute
   '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
   '/demos/mnist-training': typeof DemosMnistTrainingRoute
+  '/demos/needle': typeof DemosNeedleRoute
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/online-k-means': typeof DemosOnlineKMeansRoute
   '/demos/rival-k': typeof DemosRivalKRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/demos/linear-systems': typeof DemosLinearSystemsRoute
   '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
   '/demos/mnist-training': typeof DemosMnistTrainingRoute
+  '/demos/needle': typeof DemosNeedleRoute
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/online-k-means': typeof DemosOnlineKMeansRoute
   '/demos/rival-k': typeof DemosRivalKRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/demos/linear-systems': typeof DemosLinearSystemsRoute
   '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
   '/demos/mnist-training': typeof DemosMnistTrainingRoute
+  '/demos/needle': typeof DemosNeedleRoute
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/online-k-means': typeof DemosOnlineKMeansRoute
   '/demos/rival-k': typeof DemosRivalKRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/demos/linear-systems'
     | '/demos/mnist-nk-clustering'
     | '/demos/mnist-training'
+    | '/demos/needle'
     | '/demos/nk-clustering'
     | '/demos/online-k-means'
     | '/demos/rival-k'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/demos/linear-systems'
     | '/demos/mnist-nk-clustering'
     | '/demos/mnist-training'
+    | '/demos/needle'
     | '/demos/nk-clustering'
     | '/demos/online-k-means'
     | '/demos/rival-k'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/demos/linear-systems'
     | '/demos/mnist-nk-clustering'
     | '/demos/mnist-training'
+    | '/demos/needle'
     | '/demos/nk-clustering'
     | '/demos/online-k-means'
     | '/demos/rival-k'
@@ -168,6 +180,7 @@ export interface RootRouteChildren {
   DemosLinearSystemsRoute: typeof DemosLinearSystemsRoute
   DemosMnistNkClusteringRoute: typeof DemosMnistNkClusteringRoute
   DemosMnistTrainingRoute: typeof DemosMnistTrainingRoute
+  DemosNeedleRoute: typeof DemosNeedleRoute
   DemosNkClusteringRoute: typeof DemosNkClusteringRoute
   DemosOnlineKMeansRoute: typeof DemosOnlineKMeansRoute
   DemosRivalKRoute: typeof DemosRivalKRoute
@@ -209,6 +222,13 @@ declare module '@tanstack/solid-router' {
       path: '/demos/nk-clustering'
       fullPath: '/demos/nk-clustering'
       preLoaderRoute: typeof DemosNkClusteringRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demos/needle': {
+      id: '/demos/needle'
+      path: '/demos/needle'
+      fullPath: '/demos/needle'
+      preLoaderRoute: typeof DemosNeedleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demos/mnist-training': {
@@ -264,6 +284,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemosLinearSystemsRoute: DemosLinearSystemsRoute,
   DemosMnistNkClusteringRoute: DemosMnistNkClusteringRoute,
   DemosMnistTrainingRoute: DemosMnistTrainingRoute,
+  DemosNeedleRoute: DemosNeedleRoute,
   DemosNkClusteringRoute: DemosNkClusteringRoute,
   DemosOnlineKMeansRoute: DemosOnlineKMeansRoute,
   DemosRivalKRoute: DemosRivalKRoute,

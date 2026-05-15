@@ -10,6 +10,13 @@ import { nitro } from 'nitro/vite'
 import lucidePreprocess from 'vite-plugin-lucide-preprocess'
 
 export default defineConfig({
+  ssr: {
+    noExternal: [
+      '@tanstack/router-core',
+      '@tanstack/start-client-core',
+      '@tanstack/start-server-core',
+    ],
+  },
   plugins: [
     lucidePreprocess(),
     devtools(),

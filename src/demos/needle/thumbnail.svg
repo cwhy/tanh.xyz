@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Needle SAN thumbnail">
+  <rect width="320" height="180" rx="14" fill="#fdfbf7"/>
+  <rect x="22" y="24" width="82" height="132" rx="10" fill="#fff" stroke="#2d2d2d" stroke-width="3"/>
+  <rect x="216" y="24" width="82" height="132" rx="10" fill="#fff" stroke="#2d2d2d" stroke-width="3"/>
+  <path d="M112 54h96M112 90h96M112 126h96" stroke="#2d5da1" stroke-width="5" stroke-linecap="round"/>
+  <path d="M112 54c34 0 58 72 96 72M112 126c34 0 58-72 96-72" stroke="#ff4d4d" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <g fill="#662200">
+    <circle cx="62" cy="54" r="9"/>
+    <circle cx="62" cy="90" r="9"/>
+    <circle cx="62" cy="126" r="9"/>
+    <circle cx="257" cy="54" r="9"/>
+    <circle cx="257" cy="90" r="9"/>
+    <circle cx="257" cy="126" r="9"/>
+  </g>
+  <text x="160" y="166" text-anchor="middle" font-family="monospace" font-size="15" fill="#2d2d2d">12e / 8d · 26M</text>
+</svg>

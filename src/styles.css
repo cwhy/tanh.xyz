@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Patrick+Hand&display=swap');
 @import "tailwindcss";
-@plugin "daisyui";
+@plugin "daisyui" {
+  exclude: radialprogress, properties;
+}
 
 @theme {
   --color-primary: #662200;

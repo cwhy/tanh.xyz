@@ -7,6 +7,7 @@ import mnistThumb from '../demos/mnist-training/thumbnail.svg'
 import additionThumb from '../demos/addition-grokking/thumbnail.svg'
 import linearSystemsThumb from '../demos/linear-systems/thumbnail.svg'
 import damThumb from '../demos/dense-associative-memory/thumbnail.svg'
+import needleThumb from '../demos/needle/thumbnail.svg'
 export const Route = createFileRoute('/')({ component: HomePage })
 
 function HomePage() {
@@ -121,6 +122,13 @@ function HomePage() {
               href="/demos/addition-grokking"
               status="ready"
               thumbnail={additionThumb}
+            />
+            <DemoCard
+              title="Needle SAN"
+              description="Run a 26M-scale Simple Attention Network forward pass in jax-js with GQA, RoPE, gated residuals, and tied embeddings."
+              href="/demos/needle"
+              status="ready"
+              thumbnail={needleThumb}
             />
             <DemoCard
               title="Linear Systems"
