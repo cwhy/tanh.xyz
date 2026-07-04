@@ -20,10 +20,10 @@ export function SingleStageFullLayout(props: SingleStageFullLayoutProps): JSX.El
                 'background-size': '24px 24px',
             }}
         >
-            <div class="h-screen w-full pl-4 pr-0 py-6 md:pl-6 md:pr-0 md:py-8">
+            <div class="min-h-screen w-full px-4 py-6 md:px-6 md:py-8 lg:h-screen lg:pr-0">
                 <div class="flex h-full min-h-0 flex-col">
-                    <div class="grid min-h-0 grow grid-cols-[minmax(280px,360px)_minmax(0,1fr)] gap-6">
-                        <aside class="h-full min-h-0 flex flex-col">
+                    <div class="grid min-h-0 grow grid-cols-1 gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
+                        <aside class="min-h-0 flex flex-col lg:h-full">
                             <header class="shrink-0 pb-4">
                                 {props.backHref && (
                                     <a
@@ -56,7 +56,7 @@ export function SingleStageFullLayout(props: SingleStageFullLayoutProps): JSX.El
                                 <Dynamic component={props.config} />
                             </div>
                         </aside>
-                        <section class="h-full min-h-0">
+                        <section class="min-h-0 lg:h-full">
                             <Dynamic component={props.stage} />
                         </section>
                     </div>

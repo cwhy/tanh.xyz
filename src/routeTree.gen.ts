@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemosTwoMoonRouteImport } from './routes/demos/two-moon'
+import { Route as DemosSheafAdmmMnistRouteImport } from './routes/demos/sheaf-admm-mnist'
 import { Route as DemosRivalKRouteImport } from './routes/demos/rival-k'
 import { Route as DemosOnlineKMeansRouteImport } from './routes/demos/online-k-means'
 import { Route as DemosNkClusteringRouteImport } from './routes/demos/nk-clustering'
@@ -30,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const DemosTwoMoonRoute = DemosTwoMoonRouteImport.update({
   id: '/demos/two-moon',
   path: '/demos/two-moon',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemosSheafAdmmMnistRoute = DemosSheafAdmmMnistRouteImport.update({
+  id: '/demos/sheaf-admm-mnist',
+  path: '/demos/sheaf-admm-mnist',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemosRivalKRoute = DemosRivalKRouteImport.update({
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/online-k-means': typeof DemosOnlineKMeansRoute
   '/demos/rival-k': typeof DemosRivalKRoute
+  '/demos/sheaf-admm-mnist': typeof DemosSheafAdmmMnistRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
 }
 export interface FileRoutesByTo {
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/online-k-means': typeof DemosOnlineKMeansRoute
   '/demos/rival-k': typeof DemosRivalKRoute
+  '/demos/sheaf-admm-mnist': typeof DemosSheafAdmmMnistRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
 }
 export interface FileRoutesById {
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/demos/nk-clustering': typeof DemosNkClusteringRoute
   '/demos/online-k-means': typeof DemosOnlineKMeansRoute
   '/demos/rival-k': typeof DemosRivalKRoute
+  '/demos/sheaf-admm-mnist': typeof DemosSheafAdmmMnistRoute
   '/demos/two-moon': typeof DemosTwoMoonRoute
 }
 export interface FileRouteTypes {
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/demos/nk-clustering'
     | '/demos/online-k-means'
     | '/demos/rival-k'
+    | '/demos/sheaf-admm-mnist'
     | '/demos/two-moon'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/demos/nk-clustering'
     | '/demos/online-k-means'
     | '/demos/rival-k'
+    | '/demos/sheaf-admm-mnist'
     | '/demos/two-moon'
   id:
     | '__root__'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/demos/nk-clustering'
     | '/demos/online-k-means'
     | '/demos/rival-k'
+    | '/demos/sheaf-admm-mnist'
     | '/demos/two-moon'
   fileRoutesById: FileRoutesById
 }
@@ -184,6 +196,7 @@ export interface RootRouteChildren {
   DemosNkClusteringRoute: typeof DemosNkClusteringRoute
   DemosOnlineKMeansRoute: typeof DemosOnlineKMeansRoute
   DemosRivalKRoute: typeof DemosRivalKRoute
+  DemosSheafAdmmMnistRoute: typeof DemosSheafAdmmMnistRoute
   DemosTwoMoonRoute: typeof DemosTwoMoonRoute
 }
 
@@ -201,6 +214,13 @@ declare module '@tanstack/solid-router' {
       path: '/demos/two-moon'
       fullPath: '/demos/two-moon'
       preLoaderRoute: typeof DemosTwoMoonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demos/sheaf-admm-mnist': {
+      id: '/demos/sheaf-admm-mnist'
+      path: '/demos/sheaf-admm-mnist'
+      fullPath: '/demos/sheaf-admm-mnist'
+      preLoaderRoute: typeof DemosSheafAdmmMnistRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demos/rival-k': {
@@ -288,6 +308,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemosNkClusteringRoute: DemosNkClusteringRoute,
   DemosOnlineKMeansRoute: DemosOnlineKMeansRoute,
   DemosRivalKRoute: DemosRivalKRoute,
+  DemosSheafAdmmMnistRoute: DemosSheafAdmmMnistRoute,
   DemosTwoMoonRoute: DemosTwoMoonRoute,
 }
 export const routeTree = rootRouteImport

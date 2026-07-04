@@ -1,0 +1,36 @@
+<svg width="400" height="240" viewBox="0 0 400 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="240" rx="18" fill="#fdfbf7"/>
+  <path d="M0 0h400v240H0z" fill="url(#dots)" opacity=".9"/>
+  <rect x="24" y="24" width="136" height="136" rx="10" fill="#111" stroke="#2d2d2d" stroke-width="4"/>
+  <path d="M65 52c21-22 66-10 54 18-8 20-55 10-64 33-10 25 52 40 75 11" stroke="#fff" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <g stroke="#e5e0d8" stroke-width="1.4">
+    <path d="M43 24v136M63 24v136M82 24v136M102 24v136M121 24v136M141 24v136"/>
+    <path d="M24 43h136M24 63h136M24 82h136M24 102h136M24 121h136M24 141h136"/>
+  </g>
+  <g transform="translate(194 35)" stroke="#2d2d2d" stroke-width="2">
+    <rect x="-16" y="-16" width="178" height="154" rx="12" fill="#fff" stroke-width="3"/>
+    <g fill="#2d5da1">
+      <circle cx="0" cy="0" r="7"/><circle cx="36" cy="0" r="6"/><circle cx="72" cy="0" r="8"/><circle cx="108" cy="0" r="6"/><circle cx="144" cy="0" r="7"/>
+      <circle cx="0" cy="36" r="6"/><circle cx="36" cy="36" r="8"/><circle cx="72" cy="36" r="6"/><circle cx="108" cy="36" r="7"/><circle cx="144" cy="36" r="8"/>
+      <circle cx="0" cy="72" r="8"/><circle cx="36" cy="72" r="6"/><circle cx="72" cy="72" r="7"/><circle cx="108" cy="72" r="8"/><circle cx="144" cy="72" r="6"/>
+      <circle cx="0" cy="108" r="6"/><circle cx="36" cy="108" r="7"/><circle cx="72" cy="108" r="8"/><circle cx="108" cy="108" r="6"/><circle cx="144" cy="108" r="7"/>
+    </g>
+    <g stroke-linecap="round" opacity=".78">
+      <path d="M0 0h36M36 0h36M72 0h36M108 0h36" stroke="#2d5da1"/>
+      <path d="M0 36h36M36 36h36M72 36h36M108 36h36" stroke="#ff4d4d" stroke-width="4"/>
+      <path d="M0 72h36M36 72h36M72 72h36M108 72h36" stroke="#2d5da1"/>
+      <path d="M36 0v36M72 0v36M108 0v36M144 0v36M36 72v36M72 72v36M108 72v36" stroke="#2d5da1"/>
+    </g>
+  </g>
+  <g transform="translate(46 188)">
+    <path d="M0 21c18-22 36-5 54-16s36 10 54 0 36 11 54 2" stroke="#662200" stroke-width="5" stroke-linecap="round"/>
+    <path d="M0 32c18-8 36-12 54-8s36-4 54-2 36-15 54-16" stroke="#ff4d4d" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <text x="218" y="207" fill="#2d2d2d" font-family="Kalam, Comic Sans MS, cursive" font-size="28" font-weight="700">Sheaf-ADMM</text>
+  <defs>
+    <pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#e5e0d8"/>
+    </pattern>
+  </defs>
+</svg>
+

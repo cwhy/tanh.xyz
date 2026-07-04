@@ -4,6 +4,7 @@ import { SeriesCard } from '../components/SeriesCard'
 import twoMoonThumb from '../demos/two-moons-clustering/thumbnail.svg'
 import nkClusterThumb from '../demos/nk-clustering/thumbnail.svg'
 import mnistThumb from '../demos/mnist-training/thumbnail.svg'
+import sheafAdmmMnistThumb from '../demos/sheaf-admm-mnist/thumbnail.svg'
 import additionThumb from '../demos/addition-grokking/thumbnail.svg'
 import linearSystemsThumb from '../demos/linear-systems/thumbnail.svg'
 import damThumb from '../demos/dense-associative-memory/thumbnail.svg'
@@ -114,6 +115,14 @@ function HomePage() {
               href="/demos/mnist-training"
               status="ready"
               thumbnail={mnistThumb}
+            />
+
+            <DemoCard
+              title="Sheaf-ADMM MNIST"
+              description="Limited-view MNIST patch agents negotiate a global digit class through ADMM-style sheaf consensus."
+              href="/demos/sheaf-admm-mnist"
+              status="ready"
+              thumbnail={sheafAdmmMnistThumb}
             />
 
             <DemoCard
