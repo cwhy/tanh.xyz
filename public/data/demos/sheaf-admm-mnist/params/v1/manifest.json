@@ -17,11 +17,11 @@
     "l1Weight": 0.006337180166370117,
     "rhoInit": 0.12,
     "rhoLearnable": true,
-    "cgIters": 2,
+    "cgIters": 5,
     "tikhonovEps": 1e-05,
     "zMode": "project",
     "zInit": "h",
-    "evalIterations": 20,
+    "evalIterations": 100,
     "checkpointKind": "ema_params",
     "sourceConfig": {
       "task": "mnist",
@@ -35,26 +35,26 @@
         "mode": "disabled"
       },
       "training": {
-        "seed": 42,
+        "seed": 43,
         "lr": 0.001,
         "weight_decay": 1e-07,
-        "epochs": 5,
-        "batch_size": 64,
+        "epochs": 20,
+        "batch_size": 128,
         "warmup_steps": 200,
         "grad_clip": 1.0,
         "ema_decay": 0.999,
         "exit_on_nan": true,
-        "val_interval": 1,
-        "K_train": 5,
-        "K_eval": 20,
-        "loss_window": 1,
+        "val_interval": 5,
+        "K_train": 20,
+        "K_eval": 100,
+        "loss_window": 2,
         "train_iters_dist": "fixed",
         "train_iters_min": 15,
         "mpnn_train_rounds": 40,
         "mpnn_eval_rounds": 100
       },
       "data": {
-        "dir": "datasets/mnist_medium",
+        "dir": "datasets/mnist",
         "train_split": "train",
         "val_splits": [
           "test"
@@ -79,7 +79,7 @@
         "x_solver": "diagonal_prox",
         "z_solver": "unrolled_cg",
         "z_mode": "project",
-        "cg_iters": 2,
+        "cg_iters": 5,
         "tikhonov_eps": 1e-05,
         "rm_sharing": "global",
         "rm_init": "orthonormal",
@@ -93,7 +93,7 @@
         "dec_readout_mode": "x_only"
       }
     },
-    "rho": 0.12160222977399826
+    "rho": 0.058852050453424454
   },
   "tensors": {
     "encoder.inputProj.kernel": {
