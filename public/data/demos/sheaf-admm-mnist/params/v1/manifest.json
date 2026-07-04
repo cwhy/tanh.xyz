@@ -1,0 +1,278 @@
+{
+  "format": "sheaf-admm-mnist-v1",
+  "config": {
+    "imageSize": 28,
+    "patchSize": 3,
+    "stride": 3,
+    "connectivity": 8,
+    "numClasses": 10,
+    "numAgents": 81,
+    "numEdges": 272,
+    "dV": 32,
+    "dE": 24,
+    "hiddenDim": 256,
+    "numDirections": 8,
+    "loraRank": 8,
+    "loraAlpha": 1.0,
+    "l1Weight": 0.006337180166370117,
+    "rhoInit": 0.12,
+    "rhoLearnable": true,
+    "cgIters": 2,
+    "tikhonovEps": 1e-05,
+    "zMode": "project",
+    "zInit": "h",
+    "evalIterations": 20,
+    "checkpointKind": "ema_params",
+    "sourceConfig": {
+      "task": "mnist",
+      "model_type": "sheaf",
+      "wandb": {
+        "project": "sheaf-admm",
+        "entity": null,
+        "name": null,
+        "group": null,
+        "tags": [],
+        "mode": "disabled"
+      },
+      "training": {
+        "seed": 42,
+        "lr": 0.001,
+        "weight_decay": 1e-07,
+        "epochs": 5,
+        "batch_size": 64,
+        "warmup_steps": 200,
+        "grad_clip": 1.0,
+        "ema_decay": 0.999,
+        "exit_on_nan": true,
+        "val_interval": 1,
+        "K_train": 5,
+        "K_eval": 20,
+        "loss_window": 1,
+        "train_iters_dist": "fixed",
+        "train_iters_min": 15,
+        "mpnn_train_rounds": 40,
+        "mpnn_eval_rounds": 100
+      },
+      "data": {
+        "dir": "datasets/mnist_medium",
+        "train_split": "train",
+        "val_splits": [
+          "test"
+        ],
+        "loader": "image"
+      },
+      "task_cfg": {
+        "patch_size": 3,
+        "stride": 3,
+        "connectivity": 8,
+        "num_classes": 10
+      },
+      "model": {
+        "num_classes": 10,
+        "d_v": 32,
+        "d_e": 24,
+        "encoder_arch": "mlp",
+        "enc_hidden_dim": 256,
+        "comm_norm_type": "layernorm",
+        "objective_mode": "lasso",
+        "l1_weight": 0.006337180166370117,
+        "x_solver": "diagonal_prox",
+        "z_solver": "unrolled_cg",
+        "z_mode": "project",
+        "cg_iters": 2,
+        "tikhonov_eps": 1e-05,
+        "rm_sharing": "global",
+        "rm_init": "orthonormal",
+        "rm_mode": "context",
+        "lora_rank": 8,
+        "lora_init_style": "legacy",
+        "num_directions": 8,
+        "rho_init": 0.12,
+        "decoder_arch": "classification",
+        "dec_linear_head": true,
+        "dec_readout_mode": "x_only"
+      }
+    },
+    "rho": 0.12160222977399826
+  },
+  "tensors": {
+    "encoder.inputProj.kernel": {
+      "shape": [
+        9,
+        256
+      ],
+      "dtype": "float32",
+      "file": "encoder.inputProj.kernel.f32.bin"
+    },
+    "encoder.inputProj.bias": {
+      "shape": [
+        256
+      ],
+      "dtype": "float32",
+      "file": "encoder.inputProj.bias.f32.bin"
+    },
+    "encoder.block0.norm.scale": {
+      "shape": [
+        256
+      ],
+      "dtype": "float32",
+      "file": "encoder.block0.norm.scale.f32.bin"
+    },
+    "encoder.block0.dense1.kernel": {
+      "shape": [
+        256,
+        256
+      ],
+      "dtype": "float32",
+      "file": "encoder.block0.dense1.kernel.f32.bin"
+    },
+    "encoder.block0.dense1.bias": {
+      "shape": [
+        256
+      ],
+      "dtype": "float32",
+      "file": "encoder.block0.dense1.bias.f32.bin"
+    },
+    "encoder.block0.dense2.kernel": {
+      "shape": [
+        256,
+        256
+      ],
+      "dtype": "float32",
+      "file": "encoder.block0.dense2.kernel.f32.bin"
+    },
+    "encoder.block0.dense2.bias": {
+      "shape": [
+        256
+      ],
+      "dtype": "float32",
+      "file": "encoder.block0.dense2.bias.f32.bin"
+    },
+    "encoder.commHead.kernel": {
+      "shape": [
+        256,
+        32
+      ],
+      "dtype": "float32",
+      "file": "encoder.commHead.kernel.f32.bin"
+    },
+    "encoder.commHead.bias": {
+      "shape": [
+        32
+      ],
+      "dtype": "float32",
+      "file": "encoder.commHead.bias.f32.bin"
+    },
+    "encoder.commNorm.scale": {
+      "shape": [
+        32
+      ],
+      "dtype": "float32",
+      "file": "encoder.commNorm.scale.f32.bin"
+    },
+    "encoder.commNorm.bias": {
+      "shape": [
+        32
+      ],
+      "dtype": "float32",
+      "file": "encoder.commNorm.bias.f32.bin"
+    },
+    "encoder.qDiag.kernel": {
+      "shape": [
+        256,
+        32
+      ],
+      "dtype": "float32",
+      "file": "encoder.qDiag.kernel.f32.bin"
+    },
+    "encoder.qDiag.bias": {
+      "shape": [
+        32
+      ],
+      "dtype": "float32",
+      "file": "encoder.qDiag.bias.f32.bin"
+    },
+    "encoder.q.kernel": {
+      "shape": [
+        256,
+        32
+      ],
+      "dtype": "float32",
+      "file": "encoder.q.kernel.f32.bin"
+    },
+    "encoder.q.bias": {
+      "shape": [
+        32
+      ],
+      "dtype": "float32",
+      "file": "encoder.q.bias.f32.bin"
+    },
+    "encoder.loraPreLn.scale": {
+      "shape": [
+        256
+      ],
+      "dtype": "float32",
+      "file": "encoder.loraPreLn.scale.f32.bin"
+    },
+    "encoder.loraPreLn.bias": {
+      "shape": [
+        256
+      ],
+      "dtype": "float32",
+      "file": "encoder.loraPreLn.bias.f32.bin"
+    },
+    "encoder.loraA.kernel": {
+      "shape": [
+        256,
+        1536
+      ],
+      "dtype": "float32",
+      "file": "encoder.loraA.kernel.f32.bin"
+    },
+    "encoder.loraA.bias": {
+      "shape": [
+        1536
+      ],
+      "dtype": "float32",
+      "file": "encoder.loraA.bias.f32.bin"
+    },
+    "encoder.loraB.kernel": {
+      "shape": [
+        256,
+        2048
+      ],
+      "dtype": "float32",
+      "file": "encoder.loraB.kernel.f32.bin"
+    },
+    "encoder.loraB.bias": {
+      "shape": [
+        2048
+      ],
+      "dtype": "float32",
+      "file": "encoder.loraB.bias.f32.bin"
+    },
+    "restriction.shared": {
+      "shape": [
+        24,
+        32
+      ],
+      "dtype": "float32",
+      "file": "restriction.shared.f32.bin"
+    },
+    "decoder.cls.kernel": {
+      "shape": [
+        32,
+        10
+      ],
+      "dtype": "float32",
+      "file": "decoder.cls.kernel.f32.bin"
+    },
+    "decoder.cls.bias": {
+      "shape": [
+        10
+      ],
+      "dtype": "float32",
+      "file": "decoder.cls.bias.f32.bin"
+    }
+  }
+}

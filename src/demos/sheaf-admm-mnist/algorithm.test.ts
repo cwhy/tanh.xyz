@@ -58,6 +58,39 @@ describe('Sheaf-ADMM MNIST math', () => {
         expect(session.agents).toHaveLength(AGENT_COUNT)
         expect(session.edges).toHaveLength(84)
         expect(session.initial.probabilities).toHaveLength(DIGIT_COUNT)
+        expect(session.initial.z.every(row => row.every(value => value === 0))).toBe(true)
+        expect(session.initial.u.every(row => row.every(value => value === 0))).toBe(true)
+    })
+
+    test('first ADMM step uses zero consensus and dual initialization', () => {
+        const agents: PatchAgent[] = Array.from({ length: AGENT_COUNT }, (_, id) => ({
+            id,
+            row: Math.floor(id / 7),
+            col: id % 7,
+            ink: 1,
+            target: Array.from({ length: DIGIT_COUNT }, (_, digit) => (digit === 2 ? 4 : 0)),
+            reliability: Array.from({ length: DIGIT_COUNT }, () => 1),
+        }))
+
+        const snapshot: SheafAdmmSnapshot = {
+            iteration: 0,
+            x: agents.map(agent => [...agent.target]),
+            z: Array.from({ length: AGENT_COUNT }, () => Array.from({ length: DIGIT_COUNT }, () => 0)),
+            u: Array.from({ length: AGENT_COUNT }, () => Array.from({ length: DIGIT_COUNT }, () => 0)),
+            prediction: 0,
+            localPrediction: 2,
+            probabilities: Array.from({ length: DIGIT_COUNT }, () => 0.1),
+            primalResidual: 0,
+            consensusResidual: 0,
+            dualEnergy: 0,
+            edges: [],
+        }
+
+        const next = stepSheafAdmm(agents, snapshot, { rho: 1, gamma: 0.1, diffusionSteps: 0 })
+
+        expect(next.x[0][2]).toBeCloseTo(2)
+        expect(next.z[0][2]).toBeCloseTo(2)
+        expect(next.u[0][2]).toBeCloseTo(0)
     })
 
     test('diffusion lowers projected sheaf disagreement on a controlled chain', () => {
@@ -115,4 +148,3 @@ describe('Sheaf-ADMM MNIST math', () => {
         }
     })
 })
-

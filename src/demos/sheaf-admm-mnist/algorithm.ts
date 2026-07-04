@@ -254,7 +254,7 @@ export function createSheafAdmmSession(
     }
 
     const x = agents.map(agent => [...agent.target])
-    const z = clone2D(x)
+    const z = zeros2D(AGENT_COUNT, DIGIT_COUNT)
     const u = zeros2D(AGENT_COUNT, DIGIT_COUNT)
     const edges = makeEdges(agents)
 

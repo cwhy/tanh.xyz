@@ -140,6 +140,8 @@ function ControlSlider(props: {
 
 function Sidebar(props: {
     latest: SheafAdmmSnapshot | null
+    modelStatus: string
+    modelMessage: string | null
     sampleIndex: number
     datasetCount: number
     maxIterations: number
@@ -171,6 +173,11 @@ function Sidebar(props: {
 
             <SidebarSection title="Status">
                 <div class="grid gap-2">
+                    <StatusRow
+                        label="Engine"
+                        value={props.modelStatus === 'trained' ? 'trained' : 'fallback'}
+                        tone={props.modelStatus === 'trained' ? 'text-[#2d9a55]' : 'text-[#f59e0b]'}
+                    />
                     <StatusRow label="Iteration" value={`${props.latest?.iteration ?? 0} / ${props.maxIterations}`} tone="text-[#2d5da1]" />
                     <StatusRow label="Primal Residual" value={formatResidual(props.latest?.primalResidual)} tone="text-[#ff4d4d]" />
                     <StatusRow label="Cons. Residual" value={formatResidual(props.latest?.consensusResidual)} tone="text-[#2d5da1]" />
@@ -300,7 +307,7 @@ function Sidebar(props: {
             </SidebarSection>
 
             <p class="mt-5 text-[13px] leading-snug">
-                Sheaf-ADMM iterates local proposals (x), sheaf diffusion consensus (z), and dual accumulation (u) to reach a global answer.
+                {props.modelMessage ?? 'Sheaf-ADMM iterates local proposals (x), consensus projection (z), and dual accumulation (u).'}
             </p>
         </aside>
     )
@@ -311,29 +318,32 @@ function InputPanel(props: {
     agents: PatchAgent[]
     snapshot: SheafAdmmSnapshot
 }): JSX.Element {
+    const gridSize = createMemo(() => Math.max(1, Math.round(Math.sqrt(props.agents.length || 1))))
+    const cellSize = createMemo(() => 280 / gridSize())
+
     return (
-        <Panel title="1) INPUT: MNIST DIGIT (28x28) -> 7x7 PATCH AGENTS (4x4)" class="min-h-0" bodyClass="min-h-0 p-4">
+        <Panel title="1) INPUT: MNIST DIGIT (28x28) -> PATCH AGENTS" class="min-h-0" bodyClass="min-h-0 p-4">
             <div class="flex h-full min-h-0 flex-col items-center justify-between gap-3">
                 <div class="relative aspect-square w-full max-w-[310px] overflow-hidden bg-black">
                     <MnistImage pixels={props.pixels} size={310} class="block h-full w-full" />
                     <svg class="absolute inset-0 h-full w-full" viewBox="0 0 280 280" aria-label="MNIST patch grid">
                         <For each={props.agents}>
                             {(agent) => {
-                                const x = agent.col * 40
-                                const y = agent.row * 40
+                                const x = () => agent.col * cellSize()
+                                const y = () => agent.row * cellSize()
                                 const state = () => props.snapshot.z[agent.id]?.[props.snapshot.prediction] ?? 0
                                 return (
                                     <g>
                                         <rect
-                                            x={x}
-                                            y={y}
-                                            width={40}
-                                            height={40}
+                                            x={x()}
+                                            y={y()}
+                                            width={cellSize()}
+                                            height={cellSize()}
                                             fill={state() > 0 ? 'rgba(45,93,161,0.16)' : 'transparent'}
                                             stroke="rgba(255,255,255,0.42)"
                                             stroke-width="1"
                                         />
-                                        <text x={x + 7} y={y + 14} fill="white" font-size="10" font-family="monospace">
+                                        <text x={x() + 4} y={y() + 11} fill="white" font-size="8" font-family="monospace">
                                             {agent.id}
                                         </text>
                                     </g>
@@ -348,7 +358,7 @@ function InputPanel(props: {
                     <span>1</span>
                 </div>
                 <p class="text-center text-[16px] leading-snug">
-                    Each agent sees a 4x4 patch (16 pixels).<br />
+                    Each trained agent sees a local 3x3 patch.<br />
                     No single agent can identify the digit.
                 </p>
             </div>
@@ -364,19 +374,21 @@ function NetworkPanel(props: {
     gamma: number
 }): JSX.Element {
     const maxMismatch = createMemo(() => Math.max(0.001, ...props.snapshot.edges.map(edge => edge.mismatch)))
+    const gridSize = createMemo(() => Math.max(1, Math.round(Math.sqrt(props.agents.length || 1))))
+    const spacing = createMemo(() => gridSize() > 1 ? 320 / (gridSize() - 1) : 0)
 
     return (
-        <Panel title="2) SHEAF CONSENSUS NETWORK (7x7 GRID)" class="min-h-0" bodyClass="grid h-[calc(100%-34px)] min-h-0 grid-cols-[minmax(0,1fr)_122px] gap-3 p-4">
+        <Panel title="2) SHEAF CONSENSUS NETWORK" class="min-h-0" bodyClass="grid h-[calc(100%-34px)] min-h-0 grid-cols-[minmax(0,1fr)_122px] gap-3 p-4">
             <div class="flex min-h-0 flex-col justify-between gap-2">
                 <svg viewBox="0 0 380 380" class="min-h-0 flex-1" aria-label="Sheaf consensus network">
                     <For each={props.snapshot.edges}>
                         {(edge) => {
                             const from = () => props.agents[edge.from]
                             const to = () => props.agents[edge.to]
-                            const x1 = () => 30 + from().col * 51
-                            const y1 = () => 30 + from().row * 51
-                            const x2 = () => 30 + to().col * 51
-                            const y2 = () => 30 + to().row * 51
+                            const x1 = () => 30 + from().col * spacing()
+                            const y1 = () => 30 + from().row * spacing()
+                            const x2 = () => 30 + to().col * spacing()
+                            const y2 = () => 30 + to().row * spacing()
                             const intensity = () => edge.mismatch / maxMismatch()
                             return (
                                 <line
@@ -396,19 +408,19 @@ function NetworkPanel(props: {
                         {(agent) => (
                             <g>
                                 <circle
-                                    cx={30 + agent.col * 51}
-                                    cy={30 + agent.row * 51}
-                                    r={14}
+                                    cx={30 + agent.col * spacing()}
+                                    cy={30 + agent.row * spacing()}
+                                    r={gridSize() > 7 ? 10 : 14}
                                     fill={paper}
                                     stroke={ink}
                                     stroke-width="2"
                                 />
                                 <text
-                                    x={30 + agent.col * 51}
-                                    y={35 + agent.row * 51}
+                                    x={30 + agent.col * spacing()}
+                                    y={34 + agent.row * spacing()}
                                     text-anchor="middle"
                                     fill={ink}
-                                    font-size="13"
+                                    font-size={gridSize() > 7 ? '9' : '13'}
                                     font-family="monospace"
                                 >
                                     {agent.id}
@@ -457,7 +469,7 @@ function ProbabilityChart(props: { probabilities: number[]; prediction: number }
     return (
         <svg viewBox={`0 0 ${width} ${height}`} class="h-[160px] w-full" aria-label="Class probabilities chart">
             <text x={width / 2} y="18" text-anchor="middle" font-size="15" fill={ink}>
-                Consensus (mean of z across agents)
+                Mean decoded agent probabilities
             </text>
             <line x1={chartLeft} y1={chartBottom} x2={width - 12} y2={chartBottom} stroke={ink} stroke-width="1" />
             <line x1={chartLeft} y1="32" x2={chartLeft} y2={chartBottom} stroke={ink} stroke-width="1" />
@@ -641,11 +653,15 @@ function ResidualChart(props: { points: ResidualPoint[]; maxIterations: number; 
 
 function ExplanationPanel(): JSX.Element {
     return (
-        <Panel title="WHAT'S HAPPENING" class="min-h-0" bodyClass="grid content-start gap-3 p-4 text-[14px] leading-snug">
+        <Panel
+            title="WHAT'S HAPPENING"
+            class="min-h-0"
+            bodyClass="grid h-[calc(100%-34px)] min-h-0 content-start gap-3 overflow-y-auto p-4 pr-3 text-[14px] leading-snug"
+        >
             <p><b class="text-[#d6452f]">x-update:</b> each agent solves a local objective for <Latex expr="x_i^{k+1}" /> given <Latex expr="(z^k,u^k)" />.</p>
-            <p><b class="text-[#1461c9]">z-update:</b> sheaf diffusion reduces projected neighbor error <Latex expr="F_{ij}z_i-F_{ji}z_j" />.</p>
+            <p><b class="text-[#1461c9]">z-update:</b> the trained model uses a CG projection to reduce <Latex expr="F_{ij}z_i-F_{ji}z_j" />.</p>
             <p><b class="text-[#f59e0b]">u-update:</b> accumulates disagreement with <Latex expr="u_i^{k+1}=u_i^k+x_i-z_i" />.</p>
-            <p>Consensus over iterations makes local patch decisions agree on a global digit.</p>
+            <p>The loaded checkpoint decodes every agent state and averages the agent softmax probabilities for the global digit.</p>
         </Panel>
     )
 }
@@ -697,6 +713,8 @@ export function SheafAdmmMnistDemo(): JSX.Element {
             <div class="grid h-screen min-w-[1280px] grid-cols-[280px_minmax(1000px,1fr)] border-2 border-[#2d2d2d] bg-transparent">
                 <Sidebar
                     latest={latest()}
+                    modelStatus={store.state.modelStatus}
+                    modelMessage={store.state.modelMessage}
                     sampleIndex={store.sampleIndex()}
                     datasetCount={store.datasetCount()}
                     maxIterations={store.maxIterations()}

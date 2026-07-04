@@ -12,6 +12,12 @@ import {
     type SheafAdmmSession,
     type SheafAdmmSnapshot,
 } from './algorithm'
+import {
+    loadTrainedSheafAdmmMnistModel,
+    runTrainedSheafAdmmMnist,
+    type TrainedSheafAdmmMnistModel,
+    type TrainedSheafAdmmMnistRun,
+} from './trainedModel'
 
 export interface ResidualPoint {
     iteration: number
@@ -25,6 +31,8 @@ export interface SheafAdmmStoreState {
     loadStatus: LoadStatus
     loadProgress: MnistFetchProgress | null
     error: string | null
+    modelStatus: 'loading' | 'trained' | 'fallback'
+    modelMessage: string | null
     currentLabel: number | null
     currentPixels: Float32Array
     history: SheafAdmmSnapshot[]
@@ -73,6 +81,8 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
         loadStatus: 'idle',
         loadProgress: null,
         error: null,
+        modelStatus: 'loading',
+        modelMessage: null,
         currentLabel: null,
         currentPixels: EMPTY_PIXELS,
         history: [],
@@ -82,6 +92,8 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
     let dataset: MnistMlpDataset | null = null
     let prototypes: MnistClassPrototypes | null = null
     let session: SheafAdmmSession | null = null
+    let trainedModel: TrainedSheafAdmmMnistModel | null = null
+    let trainedRun: TrainedSheafAdmmMnistRun | null = null
     let timer: ReturnType<typeof setTimeout> | null = null
 
     function latest(): SheafAdmmSnapshot | null {
@@ -109,12 +121,19 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
     }
 
     function loadSample(index: number) {
-        if (!dataset || !prototypes) return
+        if (!dataset || (!trainedModel && !prototypes)) return
         stop()
         const boundedIndex = Math.max(0, Math.min(dataset.test.count - 1, Math.round(index)))
         setSampleIndexSignal(boundedIndex)
         const pixels = getImagePixels(dataset.test, boundedIndex)
-        session = createSheafAdmmSession(pixels, prototypes)
+        if (trainedModel) {
+            trainedRun = runTrainedSheafAdmmMnist(trainedModel, pixels, trainedHistoryLimit())
+            session = trainedRun.session
+        } else if (prototypes) {
+            trainedRun = null
+            session = createSheafAdmmSession(pixels, prototypes)
+        }
+        if (!session) return
         setState({
             currentLabel: dataset.test.labels[boundedIndex],
             currentPixels: pixels,
@@ -132,7 +151,23 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
                 onProgress: progress => setState({ loadProgress: progress }),
             })
             dataset = formatMnistForMlp(raw)
-            prototypes = buildMnistPrototypes(dataset.train.images, dataset.train.labels, PROTOTYPE_TRAIN_LIMIT)
+            try {
+                trainedModel = await loadTrainedSheafAdmmMnistModel()
+                setMaxIterations(trainedModel.config.evalIterations)
+                setDiffusionSteps(trainedModel.config.cgIters)
+                setRho(trainedModel.config.rho)
+                setState({
+                    modelStatus: 'trained',
+                    modelMessage: `Trained checkpoint loaded (${trainedModel.config.checkpointKind}, K=${trainedModel.config.evalIterations}, CG=${trainedModel.config.cgIters}).`,
+                })
+            } catch (modelError) {
+                trainedModel = null
+                const modelMessage = modelError instanceof Error ? modelError.message : 'Trained checkpoint unavailable.'
+                setState({ modelStatus: 'fallback', modelMessage })
+            }
+            prototypes = trainedModel
+                ? null
+                : buildMnistPrototypes(dataset.train.images, dataset.train.labels, PROTOTYPE_TRAIN_LIMIT)
             setDatasetCount(dataset.test.count)
             setState({ loadStatus: 'ready', loadProgress: null })
             loadSample(sampleIndex())
@@ -143,7 +178,7 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
     }
 
     function resetCurrent() {
-        if (!dataset || !prototypes) return
+        if (!dataset || (!trainedModel && !prototypes)) return
         loadSample(sampleIndex())
     }
 
@@ -151,7 +186,10 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
         if (!session) return
         const current = latest()
         if (!current || current.iteration >= maxIterations()) return
-        const next = stepSheafAdmm(session.agents, current, params())
+        const next = trainedModel
+            ? ensureTrainedRun().history[current.iteration + 1]
+            : stepSheafAdmm(session.agents, current, params())
+        if (!next) return
         setState('history', history => [...history, next])
     }
 
@@ -175,12 +213,9 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
         if (!current) return
         if (runDelayMs() <= 20) {
             const remaining = Math.max(0, maxIterations() - current.iteration)
-            const appended = []
-            let cursor = current
-            for (let i = 0; i < remaining; i++) {
-                cursor = stepSheafAdmm(session.agents, cursor, params())
-                appended.push(cursor)
-            }
+            const appended = trainedModel
+                ? ensureTrainedRun().history.slice(current.iteration + 1, current.iteration + 1 + remaining)
+                : runToySteps(session, current, remaining)
             setState('history', history => [...history, ...appended])
             return
         }
@@ -189,7 +224,7 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
     }
 
     function pickNextMistake() {
-        if (!dataset) return
+        if (!dataset || trainedModel) return
         stop()
         const count = dataset.test.count
         let nextIndex = sampleIndex()
@@ -209,6 +244,30 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
             const preview = runSheafAdmm(session, params(), Math.min(6, maxIterations())).slice(1)
             setState('history', history => [...history, ...preview])
         }
+    }
+
+    function trainedHistoryLimit(): number {
+        return Math.max(maxIterations(), trainedModel?.config.evalIterations ?? 0)
+    }
+
+    function ensureTrainedRun(): TrainedSheafAdmmMnistRun {
+        if (!trainedModel) throw new Error('Trained model is not loaded.')
+        const currentLimit = trainedHistoryLimit()
+        if (!trainedRun || trainedRun.history.length <= currentLimit) {
+            trainedRun = runTrainedSheafAdmmMnist(trainedModel, state.currentPixels, currentLimit)
+            session = trainedRun.session
+        }
+        return trainedRun
+    }
+
+    function runToySteps(session: SheafAdmmSession, current: SheafAdmmSnapshot, count: number): SheafAdmmSnapshot[] {
+        const appended = []
+        let cursor = current
+        for (let i = 0; i < count; i++) {
+            cursor = stepSheafAdmm(session.agents, cursor, params())
+            appended.push(cursor)
+        }
+        return appended
     }
 
     function setSampleIndex(index: number) {
