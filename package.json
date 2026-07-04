@@ -18,6 +18,7 @@
     "@tanstack/solid-router-devtools": "^1.133.20",
     "@tanstack/solid-router-ssr-query": "^1.132.25",
     "@tanstack/solid-start": "^1.132.25",
+    "katex": "^0.17.0",
     "lucide-solid": "^0.544.0",
     "nitro": "npm:nitro-nightly@latest",
     "solid-js": "^1.9.9"

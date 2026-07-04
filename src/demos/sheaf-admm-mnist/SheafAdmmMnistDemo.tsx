@@ -1,278 +1,672 @@
-import { For, Show, createMemo, onMount, type JSX } from 'solid-js'
-import { Activity, FastForward, Pause, Play, RotateCcw, Search, Shuffle, StepForward } from 'lucide-solid'
-import { SingleStageFullLayout } from '../../components/demo-layouts/SingleStageFull'
-import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
+import { For, Show, createEffect, createMemo, createSignal, onMount, type JSX } from 'solid-js'
+import { Pause, Play, RotateCcw, StepForward } from 'lucide-solid'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 import { MnistImage } from '../../components/mnist/MnistImage'
-import { DIGIT_COUNT, type PatchAgent, type SheafAdmmSnapshot } from './algorithm'
+import { type PatchAgent, type SheafAdmmSnapshot } from './algorithm'
 import { createSheafAdmmMnistStore, type ResidualPoint } from './store'
 
-const panelStyle = {
-    'border-radius': '10px 7px 11px 8px / 8px 11px 7px 10px',
-    'box-shadow': '3px 3px 0 0 rgba(45,45,45,0.10)',
-}
+const paper = '#fdfbf7'
+const ink = '#2d2d2d'
+const muted = '#e5e0d8'
+const red = '#ff4d4d'
+const blue = '#2d5da1'
+const orange = '#f59e0b'
 
-const strongPanelStyle = {
-    'border-radius': '12px 8px 14px 9px / 9px 14px 8px 12px',
-    'box-shadow': '5px 5px 0 0 rgba(45,45,45,0.14)',
-}
-
-function digitColor(value: number): string {
-    const clamped = Math.max(0, Math.min(1, value))
-    const hue = 210 - clamped * 170
-    return `hsl(${hue} 70% ${64 - clamped * 18}%)`
-}
+const wobbly = '10px 7px 11px 8px / 8px 11px 7px 10px'
+const wobblyLarge = '14px 9px 13px 10px / 9px 14px 10px 13px'
 
 function formatResidual(value: number | undefined): string {
-    if (value === undefined) return '—'
+    if (value === undefined) return '--'
     if (value < 0.001) return value.toExponential(1)
     return value.toFixed(3)
 }
 
-function StatCard(props: { label: string; value: JSX.Element | string; tone?: string }): JSX.Element {
+function argmax(values: number[]): number {
+    let best = 0
+    for (let i = 1; i < values.length; i++) {
+        if (values[i] > values[best]) best = i
+    }
+    return best
+}
+
+function softmax(values: number[], temperature = 0.65): number[] {
+    const scaled = values.map(value => value / temperature)
+    const max = Math.max(...scaled)
+    const exp = scaled.map(value => Math.exp(value - max))
+    const sum = exp.reduce((acc, value) => acc + value, 0)
+    return exp.map(value => value / Math.max(sum, 1e-9))
+}
+
+function confidence(snapshot: SheafAdmmSnapshot | null): number {
+    if (!snapshot) return 0
+    return Math.max(...snapshot.probabilities)
+}
+
+function edgeColor(mismatch: number): string {
+    if (mismatch > 0.2) return red
+    if (mismatch > 0.1) return orange
+    if (mismatch > 0.05) return blue
+    return '#39a86b'
+}
+
+function Latex(props: { expr: string; displayMode?: boolean; class?: string }): JSX.Element {
+    let ref!: HTMLSpanElement
+
+    createEffect(() => {
+        katex.render(props.expr, ref, {
+            displayMode: props.displayMode ?? false,
+            throwOnError: false,
+            strict: false,
+        })
+    })
+
+    return <span ref={ref} class={props.class} />
+}
+
+function Panel(props: { title?: string; children: JSX.Element; class?: string; bodyClass?: string }): JSX.Element {
     return (
-        <div class="border-2 border-base-content bg-base-100 p-2" style={panelStyle}>
-            <div class="text-xs text-base-content/55">{props.label}</div>
-            <div class={`text-xl font-bold leading-tight ${props.tone ?? 'text-base-content'}`}>{props.value}</div>
+        <section
+            class={`min-h-0 overflow-hidden border-2 border-[#2d2d2d] bg-white/70 ${props.class ?? ''}`}
+            style={{
+                'border-radius': wobblyLarge,
+                'box-shadow': '2px 2px 0 rgba(45,45,45,0.08)',
+            }}
+        >
+            <Show when={props.title}>
+                <h2 class="px-4 pt-3 text-[18px] font-bold uppercase tracking-[0.02em] leading-none">
+                    {props.title}
+                </h2>
+            </Show>
+            <div class={props.bodyClass ?? 'p-4'}>
+                {props.children}
+            </div>
+        </section>
+    )
+}
+
+function SidebarSection(props: { title: string; children: JSX.Element }): JSX.Element {
+    return (
+        <div class="border-t border-[#2d2d2d]/20 pt-3">
+            <h3 class="mb-2 text-[14px] font-bold uppercase tracking-[0.06em]">{props.title}</h3>
+            {props.children}
         </div>
     )
 }
 
-function AgentDigitPanel(props: {
+function StatusRow(props: { label: string; value: JSX.Element | string; tone?: string }): JSX.Element {
+    return (
+        <div class="grid grid-cols-[1fr_auto] items-baseline gap-3 text-[15px] leading-tight">
+            <span>{props.label}</span>
+            <span class={`font-mono text-[17px] font-bold ${props.tone ?? ''}`}>{props.value}</span>
+        </div>
+    )
+}
+
+function ControlSlider(props: {
+    label: string
+    value: number
+    min: number
+    max: number
+    step: number
+    disabled?: boolean
+    onChange: (value: number) => void
+    valueText?: string
+}): JSX.Element {
+    return (
+        <label class="grid gap-1 text-[14px]">
+            <div class="grid grid-cols-[1fr_auto] items-center gap-2">
+                <span>{props.label}</span>
+                <span
+                    class="min-w-9 rounded border border-[#2d2d2d]/50 bg-white px-2 py-0.5 text-center font-mono text-[14px] font-bold"
+                    style={{ 'border-radius': wobbly }}
+                >
+                    {props.valueText ?? props.value}
+                </span>
+            </div>
+            <input
+                type="range"
+                value={props.value}
+                min={props.min}
+                max={props.max}
+                step={props.step}
+                disabled={props.disabled}
+                class="range range-sm range-primary"
+                onInput={(event) => props.onChange(Number.parseFloat(event.currentTarget.value))}
+            />
+        </label>
+    )
+}
+
+function Sidebar(props: {
+    latest: SheafAdmmSnapshot | null
+    sampleIndex: number
+    datasetCount: number
+    maxIterations: number
+    diffusionSteps: number
+    rho: number
+    gamma: number
+    displayMode: 'states' | 'edges'
+    isRunning: boolean
+    isReady: boolean
+    isComplete: boolean
+    onSample: (index: number) => void
+    onIterations: (value: number) => void
+    onDiffusion: (value: number) => void
+    onRho: (value: number) => void
+    onGamma: (value: number) => void
+    onDisplay: (value: 'states' | 'edges') => void
+    onRun: () => void
+    onStep: () => void
+    onStop: () => void
+    onReset: () => void
+}): JSX.Element {
+    return (
+        <aside class="h-screen min-h-0 overflow-hidden border-r-2 border-[#2d2d2d] px-5 py-6">
+            <h1 class="mb-4 whitespace-nowrap font-heading text-[26px] font-bold leading-none">Sheaf-ADMM MNIST</h1>
+            <a href="/" class="mb-5 inline-flex items-center gap-2 text-[16px] hover:text-[#2d5da1]">
+                <span class="text-xl leading-none">‹</span>
+                Back to Demos
+            </a>
+
+            <SidebarSection title="Status">
+                <div class="grid gap-2">
+                    <StatusRow label="Iteration" value={`${props.latest?.iteration ?? 0} / ${props.maxIterations}`} tone="text-[#2d5da1]" />
+                    <StatusRow label="Primal Residual" value={formatResidual(props.latest?.primalResidual)} tone="text-[#ff4d4d]" />
+                    <StatusRow label="Cons. Residual" value={formatResidual(props.latest?.consensusResidual)} tone="text-[#2d5da1]" />
+                    <StatusRow label="Predicted Digit" value={props.latest?.prediction ?? '--'} tone="text-[#2d9a55]" />
+                    <StatusRow label="Confidence" value={`${(confidence(props.latest) * 100).toFixed(1)}%`} tone="text-[#2d9a55]" />
+                </div>
+            </SidebarSection>
+
+            <SidebarSection title="Controls">
+                <div class="grid gap-3">
+                    <div class="grid grid-cols-[1fr_auto_auto] items-center gap-2 text-[14px]">
+                        <span>Sample</span>
+                        <button
+                            class="h-7 w-9 border-2 border-[#2d2d2d] bg-white text-lg leading-none disabled:opacity-40"
+                            style={{ 'border-radius': wobbly }}
+                            disabled={!props.isReady || props.isRunning || props.sampleIndex <= 0}
+                            onClick={() => props.onSample(props.sampleIndex - 1)}
+                        >
+                            ‹
+                        </button>
+                        <button
+                            class="h-7 w-9 border-2 border-[#2d2d2d] bg-white text-lg leading-none disabled:opacity-40"
+                            style={{ 'border-radius': wobbly }}
+                            disabled={!props.isReady || props.isRunning || props.sampleIndex >= props.datasetCount - 1}
+                            onClick={() => props.onSample(props.sampleIndex + 1)}
+                        >
+                            ›
+                        </button>
+                        <span class="col-span-3 text-center font-mono text-[13px]">
+                            {props.sampleIndex} / {Math.max(0, props.datasetCount - 1).toLocaleString()}
+                        </span>
+                    </div>
+
+                    <ControlSlider
+                        label="Iterations (K)"
+                        value={props.maxIterations}
+                        min={2}
+                        max={40}
+                        step={1}
+                        disabled={props.isRunning}
+                        onChange={props.onIterations}
+                    />
+                    <ControlSlider
+                        label="Diffusion Steps (T)"
+                        value={props.diffusionSteps}
+                        min={1}
+                        max={14}
+                        step={1}
+                        disabled={props.isRunning}
+                        onChange={props.onDiffusion}
+                    />
+                    <ControlSlider
+                        label="Rho (ρ)"
+                        value={props.rho}
+                        min={0.2}
+                        max={3}
+                        step={0.1}
+                        disabled={props.isRunning}
+                        onChange={props.onRho}
+                        valueText={props.rho.toFixed(1)}
+                    />
+                    <ControlSlider
+                        label="Gamma (γ)"
+                        value={props.gamma}
+                        min={0.01}
+                        max={0.16}
+                        step={0.01}
+                        disabled={props.isRunning}
+                        onChange={props.onGamma}
+                        valueText={props.gamma.toFixed(2)}
+                    />
+
+                    <fieldset class="grid gap-1.5 text-[14px]">
+                        <legend>Display</legend>
+                        <label class="flex items-center gap-2">
+                            <input
+                                type="radio"
+                                name="sheaf-display-mode"
+                                checked={props.displayMode === 'states'}
+                                onChange={() => props.onDisplay('states')}
+                            />
+                            States (x, z, u)
+                        </label>
+                        <label class="flex items-center gap-2">
+                            <input
+                                type="radio"
+                                name="sheaf-display-mode"
+                                checked={props.displayMode === 'edges'}
+                                onChange={() => props.onDisplay('edges')}
+                            />
+                            Edge Disagreement
+                        </label>
+                    </fieldset>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button
+                            class="flex h-10 items-center justify-center gap-2 border-2 border-[#2d2d2d] bg-[#2d5da1] text-[18px] text-white disabled:bg-[#e5e0d8] disabled:text-[#2d2d2d]/40"
+                            style={{ 'border-radius': wobbly }}
+                            disabled={!props.isReady || props.isRunning || props.isComplete}
+                            onClick={() => props.onRun()}
+                        >
+                            <Play class="h-4 w-4" />
+                            Run
+                        </button>
+                        <button
+                            class="flex h-10 items-center justify-center gap-2 border-2 border-[#2d2d2d] bg-white text-[18px] disabled:opacity-40"
+                            style={{ 'border-radius': wobbly }}
+                            disabled={!props.isReady || props.isComplete}
+                            onClick={() => props.isRunning ? props.onStop() : props.onStep()}
+                        >
+                            <Show when={props.isRunning} fallback={<StepForward class="h-4 w-4" />}>
+                                <Pause class="h-4 w-4" />
+                            </Show>
+                            {props.isRunning ? 'Pause' : 'Step'}
+                        </button>
+                        <button
+                            class="col-span-2 flex h-10 items-center justify-center gap-2 border-2 border-[#2d2d2d] bg-white text-[18px] disabled:opacity-40"
+                            style={{ 'border-radius': wobbly }}
+                            disabled={!props.isReady || props.isRunning}
+                            onClick={() => props.onReset()}
+                        >
+                            <RotateCcw class="h-4 w-4" />
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </SidebarSection>
+
+            <p class="mt-5 text-[13px] leading-snug">
+                Sheaf-ADMM iterates local proposals (x), sheaf diffusion consensus (z), and dual accumulation (u) to reach a global answer.
+            </p>
+        </aside>
+    )
+}
+
+function InputPanel(props: {
     pixels: Float32Array
     agents: PatchAgent[]
     snapshot: SheafAdmmSnapshot
 }): JSX.Element {
-    const edgePressure = createMemo(() => {
-        const pressure = Array.from({ length: props.agents.length }, () => 0)
-        for (const edge of props.snapshot.edges) {
-            pressure[edge.from] = Math.max(pressure[edge.from], edge.mismatch)
-            pressure[edge.to] = Math.max(pressure[edge.to], edge.mismatch)
-        }
-        return pressure
-    })
-
     return (
-        <div class="border-2 border-base-content bg-base-100 p-4 min-h-0" style={strongPanelStyle}>
-            <div class="mb-3 flex items-center justify-between gap-3">
-                <div>
-                    <h2 class="font-heading text-2xl leading-none">Local MNIST Agents</h2>
-                    <p class="text-sm text-base-content/60">49 patch views, each too small to decide alone.</p>
-                </div>
-                <div class="border-2 border-dashed border-base-content/50 px-2 py-1 text-sm" style={panelStyle}>
-                    patch 4x4
-                </div>
-            </div>
-
-            <div class="flex flex-col items-center gap-4">
-                <div class="relative h-[320px] w-[320px] overflow-hidden border-2 border-base-content bg-black" style={panelStyle}>
-                    <MnistImage pixels={props.pixels} size={320} class="block" />
-                    <svg class="absolute inset-0 h-full w-full" viewBox="0 0 280 280" aria-label="MNIST image patch agents">
+        <Panel title="1) INPUT: MNIST DIGIT (28x28) -> 7x7 PATCH AGENTS (4x4)" class="min-h-0" bodyClass="min-h-0 p-4">
+            <div class="flex h-full min-h-0 flex-col items-center justify-between gap-3">
+                <div class="relative aspect-square w-full max-w-[310px] overflow-hidden bg-black">
+                    <MnistImage pixels={props.pixels} size={310} class="block h-full w-full" />
+                    <svg class="absolute inset-0 h-full w-full" viewBox="0 0 280 280" aria-label="MNIST patch grid">
                         <For each={props.agents}>
                             {(agent) => {
                                 const x = agent.col * 40
                                 const y = agent.row * 40
-                                const pressure = () => Math.min(1, edgePressure()[agent.id] * 2.4)
-                                const best = () => props.snapshot.z[agent.id]?.[props.snapshot.prediction] ?? 0
+                                const state = () => props.snapshot.z[agent.id]?.[props.snapshot.prediction] ?? 0
                                 return (
                                     <g>
                                         <rect
-                                            x={x + 1}
-                                            y={y + 1}
-                                            width={38}
-                                            height={38}
-                                            fill={digitColor((best() + 2) / 4)}
-                                            opacity={0.13 + pressure() * 0.28}
-                                            stroke={pressure() > 0.35 ? '#ff4d4d' : 'rgba(255,255,255,0.5)'}
-                                            stroke-width={pressure() > 0.35 ? 2.2 : 1}
+                                            x={x}
+                                            y={y}
+                                            width={40}
+                                            height={40}
+                                            fill={state() > 0 ? 'rgba(45,93,161,0.16)' : 'transparent'}
+                                            stroke="rgba(255,255,255,0.42)"
+                                            stroke-width="1"
                                         />
+                                        <text x={x + 7} y={y + 14} fill="white" font-size="10" font-family="monospace">
+                                            {agent.id}
+                                        </text>
                                     </g>
                                 )
                             }}
                         </For>
                     </svg>
                 </div>
-
-                <div class="grid w-full grid-cols-3 gap-2 text-center text-sm">
-                    <div class="border border-base-content/20 bg-base-200 px-2 py-1" style={panelStyle}>
-                        local guess <span class="font-mono font-bold">{props.snapshot.localPrediction}</span>
-                    </div>
-                    <div class="border border-base-content/20 bg-base-200 px-2 py-1" style={panelStyle}>
-                        consensus <span class="font-mono font-bold text-secondary">{props.snapshot.prediction}</span>
-                    </div>
-                    <div class="border border-base-content/20 bg-base-200 px-2 py-1" style={panelStyle}>
-                        agents <span class="font-mono font-bold">{props.agents.length}</span>
-                    </div>
+                <div class="grid w-full max-w-[310px] grid-cols-[auto_1fr_auto] items-center gap-2 text-[14px]">
+                    <span>0</span>
+                    <div class="h-3 border border-[#2d2d2d]/40 bg-gradient-to-r from-black to-white" />
+                    <span>1</span>
                 </div>
+                <p class="text-center text-[16px] leading-snug">
+                    Each agent sees a 4x4 patch (16 pixels).<br />
+                    No single agent can identify the digit.
+                </p>
             </div>
-        </div>
+        </Panel>
     )
 }
 
-function SheafNetworkPanel(props: {
+function NetworkPanel(props: {
     agents: PatchAgent[]
     snapshot: SheafAdmmSnapshot
+    diffusionSteps: number
+    rho: number
+    gamma: number
 }): JSX.Element {
     const maxMismatch = createMemo(() => Math.max(0.001, ...props.snapshot.edges.map(edge => edge.mismatch)))
-    const nodeRadius = 6
 
     return (
-        <div class="border-2 border-base-content bg-base-100 p-4 min-h-0" style={strongPanelStyle}>
-            <div class="mb-3 flex items-center justify-between gap-3">
-                <div>
-                    <h2 class="font-heading text-2xl leading-none">Sheaf Consensus Graph</h2>
-                    <p class="text-sm text-base-content/60">Edges compare learned projections, not full private state.</p>
+        <Panel title="2) SHEAF CONSENSUS NETWORK (7x7 GRID)" class="min-h-0" bodyClass="grid h-[calc(100%-34px)] min-h-0 grid-cols-[minmax(0,1fr)_122px] gap-3 p-4">
+            <div class="flex min-h-0 flex-col justify-between gap-2">
+                <svg viewBox="0 0 380 380" class="min-h-0 flex-1" aria-label="Sheaf consensus network">
+                    <For each={props.snapshot.edges}>
+                        {(edge) => {
+                            const from = () => props.agents[edge.from]
+                            const to = () => props.agents[edge.to]
+                            const x1 = () => 30 + from().col * 51
+                            const y1 = () => 30 + from().row * 51
+                            const x2 = () => 30 + to().col * 51
+                            const y2 = () => 30 + to().row * 51
+                            const intensity = () => edge.mismatch / maxMismatch()
+                            return (
+                                <line
+                                    x1={x1()}
+                                    y1={y1()}
+                                    x2={x2()}
+                                    y2={y2()}
+                                    stroke={edgeColor(edge.mismatch)}
+                                    stroke-width={2 + intensity() * 2}
+                                    opacity={0.72}
+                                    stroke-linecap="round"
+                                />
+                            )
+                        }}
+                    </For>
+                    <For each={props.agents}>
+                        {(agent) => (
+                            <g>
+                                <circle
+                                    cx={30 + agent.col * 51}
+                                    cy={30 + agent.row * 51}
+                                    r={14}
+                                    fill={paper}
+                                    stroke={ink}
+                                    stroke-width="2"
+                                />
+                                <text
+                                    x={30 + agent.col * 51}
+                                    y={35 + agent.row * 51}
+                                    text-anchor="middle"
+                                    fill={ink}
+                                    font-size="13"
+                                    font-family="monospace"
+                                >
+                                    {agent.id}
+                                </text>
+                            </g>
+                        )}
+                    </For>
+                </svg>
+                <div class="grid grid-cols-4 gap-2 rounded border border-[#2d2d2d]/25 bg-[#fdfbf7] px-3 py-2 text-center text-[15px]" style={{ 'border-radius': wobbly }}>
+                    <span>ADMM iter: {props.snapshot.iteration}</span>
+                    <span>T = {props.diffusionSteps}</span>
+                    <span>γ = {props.gamma.toFixed(2)}</span>
+                    <span>ρ = {props.rho.toFixed(1)}</span>
                 </div>
-                <Activity class="h-6 w-6 text-accent" />
             </div>
-
-            <svg viewBox="0 0 360 360" class="h-[390px] w-full max-w-[460px] mx-auto" aria-label="Sheaf consensus network">
-                <rect x="8" y="8" width="344" height="344" fill="#fdfbf7" stroke="#e5e0d8" stroke-dasharray="5 6" />
-                <For each={props.snapshot.edges}>
-                    {(edge) => {
-                        const from = () => props.agents[edge.from]
-                        const to = () => props.agents[edge.to]
-                        const x1 = () => 36 + from().col * 48
-                        const y1 = () => 36 + from().row * 48
-                        const x2 = () => 36 + to().col * 48
-                        const y2 = () => 36 + to().row * 48
-                        const intensity = () => Math.max(0.05, edge.mismatch / maxMismatch())
-                        return (
-                            <line
-                                x1={x1()}
-                                y1={y1()}
-                                x2={x2()}
-                                y2={y2()}
-                                stroke={intensity() > 0.55 ? '#ff4d4d' : '#2d5da1'}
-                                stroke-width={1 + intensity() * 4}
-                                opacity={0.25 + intensity() * 0.6}
-                                stroke-linecap="round"
-                            />
-                        )
-                    }}
-                </For>
-                <For each={props.agents}>
-                    {(agent) => {
-                        const stateValue = () => props.snapshot.z[agent.id]?.[props.snapshot.prediction] ?? 0
-                        return (
-                            <circle
-                                cx={36 + agent.col * 48}
-                                cy={36 + agent.row * 48}
-                                r={nodeRadius + Math.max(0, agent.ink) * 5}
-                                fill={digitColor((stateValue() + 2) / 4)}
-                                stroke="#2d2d2d"
-                                stroke-width="1.6"
-                            />
-                        )
-                    }}
-                </For>
-            </svg>
-
-            <div class="grid grid-cols-2 gap-2 text-sm">
-                <div class="border border-base-content/20 bg-base-200 px-2 py-1" style={panelStyle}>
-                    primal residual <span class="font-mono text-primary">{formatResidual(props.snapshot.primalResidual)}</span>
-                </div>
-                <div class="border border-base-content/20 bg-base-200 px-2 py-1" style={panelStyle}>
-                    sheaf residual <span class="font-mono text-accent">{formatResidual(props.snapshot.consensusResidual)}</span>
-                </div>
+            <div class="flex min-w-0 flex-col justify-center gap-3 text-[14px]">
+                <div class="font-bold">Edge Disagreement</div>
+                <Latex expr="\\|F_{ij}z_i-F_{ji}z_j\\|_2" class="max-w-full overflow-hidden whitespace-nowrap text-[12px]" />
+                <LegendLine color={red} label="> 0.20" />
+                <LegendLine color={orange} label="0.10 - 0.20" />
+                <LegendLine color={blue} label="0.05 - 0.10" />
+                <LegendLine color="#39a86b" label="< 0.05" />
+                <p class="mt-4 leading-snug">Edges show learned projection mismatch between neighbors.</p>
             </div>
+        </Panel>
+    )
+}
+
+function LegendLine(props: { color: string; label: string }): JSX.Element {
+    return (
+        <div class="grid grid-cols-[28px_1fr] items-center gap-2">
+            <span class="h-1.5 rounded" style={{ background: props.color }} />
+            <span>{props.label}</span>
         </div>
     )
 }
 
-function ProbabilityPanel(props: {
-    label: number | null
-    snapshot: SheafAdmmSnapshot
-}): JSX.Element {
+function ProbabilityChart(props: { probabilities: number[]; prediction: number }): JSX.Element {
+    const width = 420
+    const height = 160
+    const chartLeft = 35
+    const chartBottom = 132
+    const probabilities = createMemo(() => props.probabilities)
+    const max = createMemo(() => Math.max(0.01, ...probabilities()))
+
     return (
-        <div class="border-2 border-base-content bg-base-100 p-4 min-h-0" style={strongPanelStyle}>
-            <div class="mb-3 flex items-center justify-between gap-3">
-                <div>
-                    <h2 class="font-heading text-2xl leading-none">Global Digit Vote</h2>
-                    <p class="text-sm text-base-content/60">Average z-state after local negotiation.</p>
-                </div>
-                <div class="border-2 border-base-content bg-[#fff9c4] px-3 py-1 text-lg font-bold" style={panelStyle}>
-                    {props.snapshot.prediction}
-                </div>
-            </div>
-
-            <div class="space-y-2">
-                <For each={Array.from({ length: DIGIT_COUNT }, (_, digit) => digit)}>
-                    {(digit) => {
-                        const value = () => props.snapshot.probabilities[digit] ?? 0
-                        const isPrediction = () => digit === props.snapshot.prediction
-                        const isLabel = () => digit === props.label
-                        return (
-                            <div class="grid grid-cols-[24px_minmax(0,1fr)_48px] items-center gap-2 text-sm">
-                                <div class={`font-mono font-bold ${isPrediction() ? 'text-secondary' : ''}`}>{digit}</div>
-                                <div class="h-5 overflow-hidden border border-base-content/20 bg-base-200" style={panelStyle}>
-                                    <div
-                                        class="h-full"
-                                        style={{
-                                            width: `${Math.max(2, value() * 100)}%`,
-                                            background: isPrediction() ? '#2d5da1' : isLabel() ? '#ff4d4d' : '#e5e0d8',
-                                        }}
-                                    />
-                                </div>
-                                <div class="text-right font-mono text-xs">{(value() * 100).toFixed(1)}%</div>
-                            </div>
-                        )
-                    }}
-                </For>
-            </div>
-
-            <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
-                <div class="border border-base-content/20 bg-base-200 px-2 py-1" style={panelStyle}>
-                    label <span class="font-mono font-bold text-accent">{props.label ?? '—'}</span>
-                </div>
-                <div class="border border-base-content/20 bg-base-200 px-2 py-1" style={panelStyle}>
-                    dual memory <span class="font-mono text-secondary">{formatResidual(props.snapshot.dualEnergy)}</span>
-                </div>
-            </div>
-        </div>
+        <svg viewBox={`0 0 ${width} ${height}`} class="h-[160px] w-full" aria-label="Class probabilities chart">
+            <text x={width / 2} y="18" text-anchor="middle" font-size="15" fill={ink}>
+                Consensus (mean of z across agents)
+            </text>
+            <line x1={chartLeft} y1={chartBottom} x2={width - 12} y2={chartBottom} stroke={ink} stroke-width="1" />
+            <line x1={chartLeft} y1="32" x2={chartLeft} y2={chartBottom} stroke={ink} stroke-width="1" />
+            <text x="7" y="38" font-size="13">1.0</text>
+            <text x="10" y="84" font-size="13">0.5</text>
+            <text x="13" y="137" font-size="13">0.0</text>
+            <For each={probabilities()}>
+                {(prob, index) => {
+                    const digit = () => index()
+                    const barX = () => chartLeft + 18 + digit() * 35
+                    const barH = () => Math.max(4, (prob / max()) * 82)
+                    return (
+                        <g>
+                            <rect
+                                x={barX()}
+                                y={chartBottom - barH()}
+                                width="13"
+                                height={barH()}
+                                fill={digit() === props.prediction ? '#d9e8ff' : '#edf2fb'}
+                                stroke={digit() === props.prediction ? blue : '#b8c3d8'}
+                                stroke-width={digit() === props.prediction ? 2 : 1}
+                            />
+                            <text x={barX() + 6.5} y="151" text-anchor="middle" font-size="13" fill={ink}>
+                                {digit()}
+                            </text>
+                            <Show when={digit() === props.prediction}>
+                                <text x={barX() + 6.5} y={chartBottom - barH() - 9} text-anchor="middle" font-size="13" fill={blue} font-weight="700">
+                                    {(prob * 100).toFixed(1)}%
+                                </text>
+                            </Show>
+                        </g>
+                    )
+                }}
+            </For>
+        </svg>
     )
 }
 
-function ResidualChart(props: { points: ResidualPoint[] }): JSX.Element {
-    const width = 900
-    const height = 140
-    const padding = 18
-    const pathFor = (key: 'primal' | 'consensus') => {
-        const points = props.points
-        if (points.length === 0) return ''
-        const maxY = Math.max(0.001, ...points.flatMap(point => [point.primal, point.consensus]))
-        return points.map((point, index) => {
-            const x = padding + (index / Math.max(1, points.length - 1)) * (width - padding * 2)
-            const y = height - padding - (point[key] / maxY) * (height - padding * 2)
-            return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
-        }).join(' ')
-    }
+interface AgentComparisonRow {
+    agentId: number
+    localPred: number
+    consensusPred: number
+    localTopProb: number
+    consensusTopProb: number
+    delta: number
+}
+
+function makeAgentComparisons(snapshot: SheafAdmmSnapshot): AgentComparisonRow[] {
+    return snapshot.x.map((local, agentId) => {
+        const localProb = softmax(local)
+        const consensusProb = softmax(snapshot.z[agentId] ?? local)
+        const localPred = argmax(localProb)
+        const consensusPred = argmax(consensusProb)
+        const delta = localProb.reduce((acc, value, index) => acc + Math.abs(value - consensusProb[index]), 0)
+        return {
+            agentId,
+            localPred,
+            consensusPred,
+            localTopProb: localProb[localPred],
+            consensusTopProb: consensusProb[consensusPred],
+            delta,
+        }
+    }).sort((a, b) => b.delta - a.delta).slice(0, 10)
+}
+
+function AgentComparisonTable(props: { snapshot: SheafAdmmSnapshot }): JSX.Element {
+    const rows = createMemo(() => makeAgentComparisons(props.snapshot))
 
     return (
-        <div class="border-2 border-base-content bg-base-100 p-3" style={strongPanelStyle}>
-            <div class="mb-2 flex items-center justify-between">
-                <h3 class="font-heading text-xl leading-none">Residual Trace</h3>
-                <div class="flex gap-4 text-xs">
-                    <span class="font-mono text-primary">primal</span>
-                    <span class="font-mono text-accent">sheaf</span>
-                </div>
-            </div>
-            <svg viewBox={`0 0 ${width} ${height}`} class="h-[120px] w-full" aria-label="ADMM residual trace">
-                <rect x="0" y="0" width={width} height={height} fill="#fdfbf7" />
-                <For each={[0, 1, 2, 3]}>
-                    {(tick) => (
-                        <line
-                            x1={padding}
-                            x2={width - padding}
-                            y1={padding + tick * 32}
-                            y2={padding + tick * 32}
-                            stroke="#e5e0d8"
-                            stroke-dasharray="5 7"
-                        />
+        <div>
+            <h3 class="mb-2 text-[16px]">Local vs Consensus (Top 10 Agents by L1 shift)</h3>
+            <div class="grid grid-cols-[44px_54px_72px_80px_1fr] gap-x-2 gap-y-1 text-[13px] leading-tight">
+                <span>Agent</span>
+                <span>Local</span>
+                <span>Local Prob</span>
+                <span>Cons. Prob</span>
+                <span>Δ (L1)</span>
+                <For each={rows()}>
+                    {(row) => (
+                        <>
+                            <span class="font-mono">{row.agentId}</span>
+                            <span class="font-mono text-[#ff4d4d]">{row.localPred}</span>
+                            <MiniBar value={row.localTopProb} color="#ef7d67" label={row.localTopProb.toFixed(2)} />
+                            <MiniBar value={row.consensusTopProb} color="#66b579" label={row.consensusTopProb.toFixed(2)} />
+                            <span class="font-mono font-bold text-[#ff4d4d]">{row.delta.toFixed(2)}</span>
+                        </>
                     )}
                 </For>
-                <path d={pathFor('primal')} fill="none" stroke="#662200" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-                <path d={pathFor('consensus')} fill="none" stroke="#ff4d4d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+            </div>
+        </div>
+    )
+}
+
+function MiniBar(props: { value: number; color: string; label: string }): JSX.Element {
+    return (
+        <span class="grid grid-cols-[32px_1fr] items-center gap-1">
+            <span class="font-mono">{props.label}</span>
+            <span class="h-2.5 border border-[#2d2d2d]/20 bg-white">
+                <span class="block h-full" style={{ width: `${Math.max(4, props.value * 100)}%`, background: props.color }} />
+            </span>
+        </span>
+    )
+}
+
+function ProbabilityPanel(props: { snapshot: SheafAdmmSnapshot }): JSX.Element {
+    const conf = () => confidence(props.snapshot)
+
+    return (
+        <Panel title="3) CLASS PROBABILITIES (DIGIT)" class="min-h-0" bodyClass="grid h-[calc(100%-34px)] min-h-0 grid-rows-[170px_minmax(0,1fr)_44px] gap-2 p-4">
+            <ProbabilityChart probabilities={props.snapshot.probabilities} prediction={props.snapshot.prediction} />
+            <AgentComparisonTable snapshot={props.snapshot} />
+            <div class="grid grid-cols-2 items-center rounded border border-[#2d2d2d]/30 px-4 text-[17px]" style={{ 'border-radius': wobbly }}>
+                <span>Predicted digit: <b class="text-[#2d9a55]">{props.snapshot.prediction}</b></span>
+                <span>Confidence: <b class="text-[#2d9a55]">{(conf() * 100).toFixed(1)}%</b></span>
+            </div>
+        </Panel>
+    )
+}
+
+function ResidualChart(props: { points: ResidualPoint[]; maxIterations: number; currentIteration: number }): JSX.Element {
+    const width = 720
+    const height = 235
+    const left = 55
+    const right = 20
+    const top = 22
+    const bottom = 42
+
+    const maxY = createMemo(() => Math.max(0.001, ...props.points.flatMap(point => [point.primal, point.consensus])))
+    const minY = 1e-4
+    const yScale = (value: number) => {
+        const logMax = Math.log10(maxY())
+        const logMin = Math.log10(minY)
+        const logValue = Math.log10(Math.max(minY, value))
+        const t = (logValue - logMin) / Math.max(0.001, logMax - logMin)
+        return height - bottom - t * (height - top - bottom)
+    }
+    const xScale = (iteration: number) => left + (iteration / Math.max(1, props.maxIterations)) * (width - left - right)
+    const pathFor = (key: 'primal' | 'consensus') => props.points.map((point, index) => {
+        const x = xScale(point.iteration)
+        const y = yScale(point[key])
+        return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
+    }).join(' ')
+
+    return (
+        <Panel title="RESIDUALS OVER ITERATIONS" class="min-h-0" bodyClass="h-[calc(100%-34px)] min-h-0 p-3">
+            <svg viewBox={`0 0 ${width} ${height}`} class="h-full w-full" aria-label="Residuals over iterations">
+                <rect x="0" y="0" width={width} height={height} fill="transparent" />
+                <For each={[1, 0.1, 0.01, 0.001, 0.0001]}>
+                    {(tick) => {
+                        const y = yScale(tick)
+                        return (
+                            <g>
+                                <line x1={left} x2={width - right} y1={y} y2={y} stroke={muted} stroke-dasharray="4 6" />
+                                <text x="12" y={y + 4} font-size="12" fill={ink}>
+                                    {tick === 1 ? '10^0' : `10^${Math.round(Math.log10(tick))}`}
+                                </text>
+                            </g>
+                        )
+                    }}
+                </For>
+                <line x1={left} x2={width - right} y1={height - bottom} y2={height - bottom} stroke={ink} />
+                <line x1={left} x2={left} y1={top} y2={height - bottom} stroke={ink} />
+                <For each={[0, 5, 10, 15, 20, 25, 30, 35, 40].filter(tick => tick <= props.maxIterations)}>
+                    {(tick) => (
+                        <text x={xScale(tick)} y={height - 16} text-anchor="middle" font-size="12" fill={ink}>{tick}</text>
+                    )}
+                </For>
+                <path d={pathFor('primal')} fill="none" stroke="#d6452f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                <path d={pathFor('consensus')} fill="none" stroke="#1461c9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                <line x1={xScale(props.currentIteration)} x2={xScale(props.currentIteration)} y1={top} y2={height - bottom} stroke={ink} stroke-dasharray="5 5" />
+                <text x={xScale(props.currentIteration) + 6} y={top + 12} font-size="12" fill={ink}>current</text>
+                <circle cx={width - 210} cy="22" r="4" fill="#d6452f" />
+                <text x={width - 200} y="27" font-size="13" fill={ink}>Primal Residual</text>
+                <circle cx={width - 80} cy="22" r="4" fill="#1461c9" />
+                <text x={width - 70} y="27" font-size="13" fill={ink}>Consensus Residual</text>
+                <text x={width / 2} y={height - 2} text-anchor="middle" font-size="14" fill={ink}>Iteration (k)</text>
             </svg>
+        </Panel>
+    )
+}
+
+function ExplanationPanel(): JSX.Element {
+    return (
+        <Panel title="WHAT'S HAPPENING" class="min-h-0" bodyClass="grid content-start gap-3 p-4 text-[14px] leading-snug">
+            <p><b class="text-[#d6452f]">x-update:</b> each agent solves a local objective for <Latex expr="x_i^{k+1}" /> given <Latex expr="(z^k,u^k)" />.</p>
+            <p><b class="text-[#1461c9]">z-update:</b> sheaf diffusion reduces projected neighbor error <Latex expr="F_{ij}z_i-F_{ji}z_j" />.</p>
+            <p><b class="text-[#f59e0b]">u-update:</b> accumulates disagreement with <Latex expr="u_i^{k+1}=u_i^k+x_i-z_i" />.</p>
+            <p>Consensus over iterations makes local patch decisions agree on a global digit.</p>
+        </Panel>
+    )
+}
+
+function StateLegendPanel(): JSX.Element {
+    return (
+        <Panel title="STATE LEGEND (per agent i)" class="min-h-0" bodyClass="grid min-h-0 gap-3 p-4 text-[14px] leading-snug">
+            <LegendDot color="#d6452f" expr="x_i^k" text="Local proposal (primal)" />
+            <LegendDot color="#1461c9" expr="z_i^k" text="Consensus state (after diffusion)" />
+            <LegendDot color="#f59e0b" expr="u_i^k" text="Dual variable (accumulated error)" />
+            <p>All states live in <Latex expr="R^{d_v}" />. Restriction maps <Latex expr="F_{ij}" /> project to edge spaces.</p>
+        </Panel>
+    )
+}
+
+function LegendDot(props: { color: string; expr: string; text: string }): JSX.Element {
+    return (
+        <div class="grid grid-cols-[18px_42px_1fr] items-center gap-2">
+            <span class="h-3 w-3 rounded-full" style={{ background: props.color }} />
+            <Latex expr={props.expr} />
+            <span>{props.text}</span>
         </div>
     )
 }
@@ -283,6 +677,7 @@ export function SheafAdmmMnistPage(): JSX.Element {
 
 export function SheafAdmmMnistDemo(): JSX.Element {
     const store = createSheafAdmmMnistStore()
+    const [displayMode, setDisplayMode] = createSignal<'states' | 'edges'>('states')
     const latest = createMemo(() => store.latest())
     const isComplete = createMemo(() => (latest()?.iteration ?? 0) >= store.maxIterations())
 
@@ -290,217 +685,78 @@ export function SheafAdmmMnistDemo(): JSX.Element {
         void store.initialize()
     })
 
-    const ConfigPanel = () => (
-        <div class="h-full overflow-y-auto px-2 py-1 space-y-3">
-            <div class="grid grid-cols-2 gap-3">
-                <StatCard label="Iteration" value={`${latest()?.iteration ?? 0}/${store.maxIterations()}`} tone="text-primary" />
-                <StatCard label="Prediction" value={latest()?.prediction ?? '—'} tone="text-secondary" />
-                <StatCard label="Primal" value={formatResidual(latest()?.primalResidual)} tone="text-accent" />
-                <StatCard label="Sheaf" value={formatResidual(latest()?.consensusResidual)} tone="text-blue-700" />
-            </div>
+    return (
+        <div
+            class="h-screen overflow-hidden text-[#2d2d2d]"
+            style={{
+                'background-color': paper,
+                'background-image': `radial-gradient(${muted} 1px, transparent 1px)`,
+                'background-size': '18px 18px',
+            }}
+        >
+            <div class="grid h-screen min-w-[1280px] grid-cols-[280px_minmax(1000px,1fr)] border-2 border-[#2d2d2d] bg-transparent">
+                <Sidebar
+                    latest={latest()}
+                    sampleIndex={store.sampleIndex()}
+                    datasetCount={store.datasetCount()}
+                    maxIterations={store.maxIterations()}
+                    diffusionSteps={store.diffusionSteps()}
+                    rho={store.rho()}
+                    gamma={store.gamma()}
+                    displayMode={displayMode()}
+                    isRunning={store.state.isRunning}
+                    isReady={store.state.loadStatus === 'ready'}
+                    isComplete={isComplete()}
+                    onSample={store.setSampleIndex}
+                    onIterations={store.setMaxIterations}
+                    onDiffusion={store.setDiffusionSteps}
+                    onRho={store.setRho}
+                    onGamma={store.setGamma}
+                    onDisplay={setDisplayMode}
+                    onRun={store.runToLimit}
+                    onStep={store.stepOnce}
+                    onStop={store.stop}
+                    onReset={store.resetCurrent}
+                />
 
-            <Show when={store.state.loadStatus === 'loading'}>
-                <div class="border-2 border-dashed border-base-content/50 bg-base-100 p-3 text-sm" style={panelStyle}>
-                    <div class="font-bold">Loading MNIST</div>
-                    <Show when={store.state.loadProgress}>
-                        {(progress) => (
+                <main class="grid h-screen min-h-0 grid-rows-[620px_minmax(0,1fr)] gap-3 p-4">
+                    <Show
+                        when={store.state.loadStatus === 'ready' && latest()}
+                        fallback={
+                            <div class="flex items-center justify-center text-[24px]">
+                                <Show when={store.state.error} fallback="Preparing MNIST patch agents...">
+                                    {store.state.error}
+                                </Show>
+                            </div>
+                        }
+                    >
+                        {(snapshot) => (
                             <>
-                                <div class="text-base-content/60">{progress().stage}: {progress().file}</div>
-                                <progress class="progress progress-primary w-full" value={progress().completedFiles} max={progress().totalFiles} />
+                                <div class="grid min-h-0 grid-cols-[1fr_1.48fr_1.28fr] gap-2">
+                                    <InputPanel pixels={store.state.currentPixels} agents={store.agents()} snapshot={snapshot()} />
+                                    <NetworkPanel
+                                        agents={store.agents()}
+                                        snapshot={snapshot()}
+                                        diffusionSteps={store.diffusionSteps()}
+                                        rho={store.rho()}
+                                        gamma={store.gamma()}
+                                    />
+                                    <ProbabilityPanel snapshot={snapshot()} />
+                                </div>
+                                <div class="grid min-h-0 grid-cols-[1.9fr_0.78fr_0.9fr] gap-0">
+                                    <ResidualChart
+                                        points={store.residualHistory()}
+                                        maxIterations={store.maxIterations()}
+                                        currentIteration={snapshot().iteration}
+                                    />
+                                    <ExplanationPanel />
+                                    <StateLegendPanel />
+                                </div>
                             </>
                         )}
                     </Show>
-                </div>
-            </Show>
-
-            <Show when={store.state.error}>
-                <div class="alert alert-error text-sm">{store.state.error}</div>
-            </Show>
-
-            <div class="grid grid-cols-2 gap-x-3 gap-y-2">
-                <ConfigSlider
-                    label="Sample"
-                    value={store.sampleIndex()}
-                    min={0}
-                    max={Math.max(1, store.datasetCount() - 1)}
-                    step={1}
-                    onChange={store.setSampleIndex}
-                    disabled={store.state.loadStatus !== 'ready' || store.state.isRunning}
-                    minLabel="0"
-                    maxLabel={String(Math.max(1, store.datasetCount() - 1))}
-                    valueClass="label-text-alt text-primary font-mono"
-                    rangeClass="range range-primary range-sm"
-                />
-
-                <ConfigSlider
-                    label="Iterations"
-                    value={store.maxIterations()}
-                    min={2}
-                    max={40}
-                    step={1}
-                    onChange={store.setMaxIterations}
-                    disabled={store.state.isRunning}
-                    minLabel="2"
-                    maxLabel="40"
-                    valueClass="label-text-alt text-secondary font-mono"
-                    rangeClass="range range-secondary range-sm"
-                />
-
-                <ConfigSlider
-                    label="Diffusion"
-                    value={store.diffusionSteps()}
-                    min={1}
-                    max={14}
-                    step={1}
-                    onChange={store.setDiffusionSteps}
-                    disabled={store.state.isRunning}
-                    minLabel="1"
-                    maxLabel="14"
-                    valueClass="label-text-alt text-info font-mono"
-                    rangeClass="range range-info range-sm"
-                />
-
-                <ConfigSlider
-                    label="Rho"
-                    value={store.rho()}
-                    min={0.2}
-                    max={3}
-                    step={0.1}
-                    onChange={store.setRho}
-                    disabled={store.state.isRunning}
-                    minLabel="0.2"
-                    maxLabel="3.0"
-                    valueFormatter={(value) => value.toFixed(1)}
-                    valueClass="label-text-alt text-primary font-mono"
-                    rangeClass="range range-primary range-sm"
-                />
-
-                <ConfigSlider
-                    label="Gamma"
-                    value={store.gamma()}
-                    min={0.01}
-                    max={0.16}
-                    step={0.01}
-                    onChange={store.setGamma}
-                    disabled={store.state.isRunning}
-                    minLabel="0.01"
-                    maxLabel="0.16"
-                    valueFormatter={(value) => value.toFixed(2)}
-                    valueClass="label-text-alt text-accent font-mono"
-                    rangeClass="range range-accent range-sm"
-                />
-
-                <ConfigSlider
-                    label="Delay"
-                    value={store.runDelayMs()}
-                    min={0}
-                    max={800}
-                    step={40}
-                    onChange={store.setRunDelayMs}
-                    disabled={store.state.isRunning}
-                    minLabel="0"
-                    maxLabel="800"
-                    valueFormatter={(value) => `${Math.round(value)}ms`}
-                    valueClass="label-text-alt text-base-content/70 font-mono"
-                    rangeClass="range range-sm"
-                />
-            </div>
-
-            <div class="grid grid-cols-2 gap-3 pt-1">
-                <button
-                    class="btn btn-sm btn-primary border-2 border-base-content gap-2 shadow-[3px_3px_0_0_#2d2d2d]"
-                    onClick={() => store.runToLimit()}
-                    disabled={store.state.loadStatus !== 'ready' || store.state.isRunning || isComplete()}
-                >
-                    <Show when={store.runDelayMs() <= 20} fallback={<Play class="h-4 w-4" />}>
-                        <FastForward class="h-4 w-4" />
-                    </Show>
-                    Run
-                </button>
-                <button
-                    class="btn btn-sm btn-outline border-2 gap-2"
-                    onClick={() => store.stop()}
-                    disabled={!store.state.isRunning}
-                >
-                    <Pause class="h-4 w-4" />
-                    Stop
-                </button>
-                <button
-                    class="btn btn-sm btn-outline border-2 gap-2"
-                    onClick={() => store.stepOnce()}
-                    disabled={store.state.loadStatus !== 'ready' || store.state.isRunning || isComplete()}
-                >
-                    <StepForward class="h-4 w-4" />
-                    Step
-                </button>
-                <button
-                    class="btn btn-sm btn-outline border-2 gap-2"
-                    onClick={() => store.resetCurrent()}
-                    disabled={store.state.loadStatus !== 'ready' || store.state.isRunning}
-                >
-                    <RotateCcw class="h-4 w-4" />
-                    Reset
-                </button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-                <button
-                    class="btn btn-sm btn-outline border-2 gap-2"
-                    onClick={() => store.setSampleIndex(store.sampleIndex() + 1)}
-                    disabled={store.state.loadStatus !== 'ready' || store.state.isRunning}
-                >
-                    <Shuffle class="h-4 w-4" />
-                    Next
-                </button>
-                <button
-                    class="btn btn-sm btn-outline border-2 gap-2"
-                    onClick={() => store.pickNextMistake()}
-                    disabled={store.state.loadStatus !== 'ready' || store.state.isRunning}
-                >
-                    <Search class="h-4 w-4" />
-                    Stress
-                </button>
-            </div>
-
-            <div class="border-2 border-dashed border-base-content/40 bg-base-100 p-2 text-xs text-base-content/65" style={panelStyle}>
-                Each agent solves a local prototype objective. The z-update diffuses only projected logits across neighbor channels, while u stores the leftover disagreement.
+                </main>
             </div>
         </div>
-    )
-
-    const StagePanel = () => (
-        <div class="min-h-0 pr-0 lg:h-full lg:pr-6">
-            <Show
-                when={store.state.loadStatus === 'ready' && latest()}
-                fallback={
-                    <div class="flex h-full flex-col items-center justify-center gap-4 text-center">
-                        <span class="loading loading-spinner loading-lg text-primary" />
-                        <span class="text-base-content/60">Preparing MNIST patch agents...</span>
-                    </div>
-                }
-            >
-                {(snapshot) => (
-                    <div class="flex min-h-0 flex-col gap-4 lg:grid lg:h-full lg:grid-rows-[minmax(0,1fr)_170px]">
-                        <div class="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(300px,0.95fr)_minmax(320px,1.1fr)_minmax(300px,0.95fr)]">
-                            <AgentDigitPanel pixels={store.state.currentPixels} agents={store.agents()} snapshot={snapshot()} />
-                            <SheafNetworkPanel agents={store.agents()} snapshot={snapshot()} />
-                            <ProbabilityPanel label={store.state.currentLabel} snapshot={snapshot()} />
-                        </div>
-                        <ResidualChart points={store.residualHistory()} />
-                    </div>
-                )}
-            </Show>
-        </div>
-    )
-
-    return (
-        <SingleStageFullLayout
-            title="Sheaf-ADMM MNIST"
-            subtitle="Limited-view digit agents negotiate a global class through ADMM-style consensus."
-            backHref="/"
-            backLabel="Back to Demos"
-            config={ConfigPanel}
-            stage={StagePanel}
-        />
     )
 }

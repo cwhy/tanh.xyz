@@ -61,11 +61,11 @@ const EMPTY_PIXELS = new Float32Array(28 * 28)
 const PROTOTYPE_TRAIN_LIMIT = 12_000
 
 export function createSheafAdmmMnistStore(): SheafAdmmStore {
-    const [sampleIndex, setSampleIndexSignal] = createSignal(0)
-    const [maxIterations, setMaxIterations] = createSignal(16)
+    const [sampleIndex, setSampleIndexSignal] = createSignal(18)
+    const [maxIterations, setMaxIterations] = createSignal(30)
     const [diffusionSteps, setDiffusionSteps] = createSignal(5)
-    const [rho, setRho] = createSignal(1.2)
-    const [gamma, setGamma] = createSignal(0.07)
+    const [rho, setRho] = createSignal(1)
+    const [gamma, setGamma] = createSignal(0.1)
     const [runDelayMs, setRunDelayMs] = createSignal(240)
     const [datasetCount, setDatasetCount] = createSignal(0)
 
