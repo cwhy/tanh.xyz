@@ -1,4 +1,4 @@
-import { For, Show, createEffect, createMemo, createSignal, onMount, type JSX } from 'solid-js'
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount, type JSX } from 'solid-js'
 import { Pause, Play, RotateCcw, StepForward } from 'lucide-solid'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
@@ -43,10 +43,10 @@ function confidence(snapshot: SheafAdmmSnapshot | null): number {
     return Math.max(...snapshot.probabilities)
 }
 
-function edgeColor(mismatch: number): string {
-    if (mismatch > 0.2) return red
-    if (mismatch > 0.1) return orange
-    if (mismatch > 0.05) return blue
+function edgeColor(normalizedMismatch: number): string {
+    if (normalizedMismatch > 0.72) return red
+    if (normalizedMismatch > 0.46) return orange
+    if (normalizedMismatch > 0.22) return blue
     return '#39a86b'
 }
 
@@ -58,6 +58,7 @@ function Latex(props: { expr: string; displayMode?: boolean; class?: string }): 
             displayMode: props.displayMode ?? false,
             throwOnError: false,
             strict: false,
+            output: 'mathml',
         })
     })
 
@@ -373,9 +374,20 @@ function NetworkPanel(props: {
     rho: number
     gamma: number
 }): JSX.Element {
-    const maxMismatch = createMemo(() => Math.max(0.001, ...props.snapshot.edges.map(edge => edge.mismatch)))
+    const mismatchStats = createMemo(() => {
+        const values = props.snapshot.edges.map(edge => edge.mismatch)
+        const min = Math.min(...values)
+        const max = Math.max(...values)
+        const range = Math.max(1e-6, max - min)
+        return { min, max, range }
+    })
     const gridSize = createMemo(() => Math.max(1, Math.round(Math.sqrt(props.agents.length || 1))))
     const spacing = createMemo(() => gridSize() > 1 ? 320 / (gridSize() - 1) : 0)
+    const normalizedMismatch = (mismatch: number) => {
+        const stats = mismatchStats()
+        if (stats.max < 1e-4) return 0
+        return Math.max(0, Math.min(1, (mismatch - stats.min) / stats.range))
+    }
 
     return (
         <Panel title="2) SHEAF CONSENSUS NETWORK" class="min-h-0" bodyClass="grid h-[calc(100%-34px)] min-h-0 grid-cols-[minmax(0,1fr)_122px] gap-3 p-4">
@@ -389,14 +401,14 @@ function NetworkPanel(props: {
                             const y1 = () => 30 + from().row * spacing()
                             const x2 = () => 30 + to().col * spacing()
                             const y2 = () => 30 + to().row * spacing()
-                            const intensity = () => edge.mismatch / maxMismatch()
+                            const intensity = () => normalizedMismatch(edge.mismatch)
                             return (
                                 <line
                                     x1={x1()}
                                     y1={y1()}
                                     x2={x2()}
                                     y2={y2()}
-                                    stroke={edgeColor(edge.mismatch)}
+                                    stroke={edgeColor(intensity())}
                                     stroke-width={2 + intensity() * 2}
                                     opacity={0.72}
                                     stroke-linecap="round"
@@ -439,11 +451,13 @@ function NetworkPanel(props: {
             <div class="flex min-w-0 flex-col justify-center gap-3 text-[14px]">
                 <div class="font-bold">Edge Disagreement</div>
                 <Latex expr="\\|F_{ij}z_i-F_{ji}z_j\\|_2" class="max-w-full overflow-hidden whitespace-nowrap text-[12px]" />
-                <LegendLine color={red} label="> 0.20" />
-                <LegendLine color={orange} label="0.10 - 0.20" />
-                <LegendLine color={blue} label="0.05 - 0.10" />
-                <LegendLine color="#39a86b" label="< 0.05" />
-                <p class="mt-4 leading-snug">Edges show learned projection mismatch between neighbors.</p>
+                <LegendLine color={red} label="highest" />
+                <LegendLine color={orange} label="high" />
+                <LegendLine color={blue} label="medium" />
+                <LegendLine color="#39a86b" label="lowest" />
+                <p class="mt-4 leading-snug">
+                    Edges are colored by current relative mismatch. Max: {formatResidual(mismatchStats().max)}
+                </p>
             </div>
         </Panel>
     )
@@ -539,7 +553,7 @@ function AgentComparisonTable(props: { snapshot: SheafAdmmSnapshot }): JSX.Eleme
     const rows = createMemo(() => makeAgentComparisons(props.snapshot))
 
     return (
-        <div>
+        <div class="min-h-0 overflow-y-auto pr-1">
             <h3 class="mb-2 text-[16px]">Local vs Consensus (Top 10 Agents by L1 shift)</h3>
             <div class="grid grid-cols-[44px_54px_72px_80px_1fr] gap-x-2 gap-y-1 text-[13px] leading-tight">
                 <span>Agent</span>
@@ -578,7 +592,7 @@ function ProbabilityPanel(props: { snapshot: SheafAdmmSnapshot }): JSX.Element {
     const conf = () => confidence(props.snapshot)
 
     return (
-        <Panel title="3) CLASS PROBABILITIES (DIGIT)" class="min-h-0" bodyClass="grid h-[calc(100%-34px)] min-h-0 grid-rows-[170px_minmax(0,1fr)_44px] gap-2 p-4">
+        <Panel title="3) CLASS PROBABILITIES (DIGIT)" class="min-h-0" bodyClass="grid h-[calc(100%-34px)] min-h-0 grid-rows-[160px_minmax(0,1fr)_40px] gap-2 p-4">
             <ProbabilityChart probabilities={props.snapshot.probabilities} prediction={props.snapshot.prediction} />
             <AgentComparisonTable snapshot={props.snapshot} />
             <div class="grid grid-cols-2 items-center rounded border border-[#2d2d2d]/30 px-4 text-[17px]" style={{ 'border-radius': wobbly }}>
@@ -590,12 +604,28 @@ function ProbabilityPanel(props: { snapshot: SheafAdmmSnapshot }): JSX.Element {
 }
 
 function ResidualChart(props: { points: ResidualPoint[]; maxIterations: number; currentIteration: number }): JSX.Element {
-    const width = 720
-    const height = 235
+    let host!: HTMLDivElement
+    const [size, setSize] = createSignal({ width: 720, height: 235 })
+    const width = createMemo(() => Math.max(360, Math.round(size().width)))
+    const height = createMemo(() => Math.max(190, Math.round(size().height)))
     const left = 55
     const right = 20
-    const top = 22
-    const bottom = 42
+    const top = 48
+    const bottom = 54
+
+    onMount(() => {
+        if (typeof ResizeObserver === 'undefined') return
+        const resize = () => {
+            setSize({
+                width: host.clientWidth,
+                height: host.clientHeight,
+            })
+        }
+        const observer = new ResizeObserver(resize)
+        observer.observe(host)
+        resize()
+        onCleanup(() => observer.disconnect())
+    })
 
     const maxY = createMemo(() => Math.max(0.001, ...props.points.flatMap(point => [point.primal, point.consensus])))
     const minY = 1e-4
@@ -604,9 +634,9 @@ function ResidualChart(props: { points: ResidualPoint[]; maxIterations: number; 
         const logMin = Math.log10(minY)
         const logValue = Math.log10(Math.max(minY, value))
         const t = (logValue - logMin) / Math.max(0.001, logMax - logMin)
-        return height - bottom - t * (height - top - bottom)
+        return height() - bottom - t * (height() - top - bottom)
     }
-    const xScale = (iteration: number) => left + (iteration / Math.max(1, props.maxIterations)) * (width - left - right)
+    const xScale = (iteration: number) => left + (iteration / Math.max(1, props.maxIterations)) * (width() - left - right)
     const pathFor = (key: 'primal' | 'consensus') => props.points.map((point, index) => {
         const x = xScale(point.iteration)
         const y = yScale(point[key])
@@ -615,14 +645,15 @@ function ResidualChart(props: { points: ResidualPoint[]; maxIterations: number; 
 
     return (
         <Panel title="RESIDUALS OVER ITERATIONS" class="min-h-0" bodyClass="h-[calc(100%-34px)] min-h-0 p-3">
-            <svg viewBox={`0 0 ${width} ${height}`} class="h-full w-full" aria-label="Residuals over iterations">
-                <rect x="0" y="0" width={width} height={height} fill="transparent" />
+            <div ref={host} class="h-full min-h-0 w-full overflow-hidden">
+            <svg viewBox={`0 0 ${width()} ${height()}`} class="block h-full w-full" aria-label="Residuals over iterations">
+                <rect x="0" y="0" width={width()} height={height()} fill="transparent" />
                 <For each={[1, 0.1, 0.01, 0.001, 0.0001]}>
                     {(tick) => {
                         const y = yScale(tick)
                         return (
                             <g>
-                                <line x1={left} x2={width - right} y1={y} y2={y} stroke={muted} stroke-dasharray="4 6" />
+                                <line x1={left} x2={width() - right} y1={y} y2={y} stroke={muted} stroke-dasharray="4 6" />
                                 <text x="12" y={y + 4} font-size="12" fill={ink}>
                                     {tick === 1 ? '10^0' : `10^${Math.round(Math.log10(tick))}`}
                                 </text>
@@ -630,23 +661,24 @@ function ResidualChart(props: { points: ResidualPoint[]; maxIterations: number; 
                         )
                     }}
                 </For>
-                <line x1={left} x2={width - right} y1={height - bottom} y2={height - bottom} stroke={ink} />
-                <line x1={left} x2={left} y1={top} y2={height - bottom} stroke={ink} />
+                <line x1={left} x2={width() - right} y1={height() - bottom} y2={height() - bottom} stroke={ink} />
+                <line x1={left} x2={left} y1={top} y2={height() - bottom} stroke={ink} />
                 <For each={[0, 5, 10, 15, 20, 25, 30, 35, 40].filter(tick => tick <= props.maxIterations)}>
                     {(tick) => (
-                        <text x={xScale(tick)} y={height - 16} text-anchor="middle" font-size="12" fill={ink}>{tick}</text>
+                        <text x={xScale(tick)} y={height() - 26} text-anchor="middle" font-size="12" fill={ink}>{tick}</text>
                     )}
                 </For>
                 <path d={pathFor('primal')} fill="none" stroke="#d6452f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
                 <path d={pathFor('consensus')} fill="none" stroke="#1461c9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-                <line x1={xScale(props.currentIteration)} x2={xScale(props.currentIteration)} y1={top} y2={height - bottom} stroke={ink} stroke-dasharray="5 5" />
+                <line x1={xScale(props.currentIteration)} x2={xScale(props.currentIteration)} y1={top} y2={height() - bottom} stroke={ink} stroke-dasharray="5 5" />
                 <text x={xScale(props.currentIteration) + 6} y={top + 12} font-size="12" fill={ink}>current</text>
-                <circle cx={width - 210} cy="22" r="4" fill="#d6452f" />
-                <text x={width - 200} y="27" font-size="13" fill={ink}>Primal Residual</text>
-                <circle cx={width - 80} cy="22" r="4" fill="#1461c9" />
-                <text x={width - 70} y="27" font-size="13" fill={ink}>Consensus Residual</text>
-                <text x={width / 2} y={height - 2} text-anchor="middle" font-size="14" fill={ink}>Iteration (k)</text>
+                <circle cx={width() - right - 122} cy="17" r="4" fill="#d6452f" />
+                <text x={width() - right} y="22" text-anchor="end" font-size="13" fill={ink}>Primal Residual</text>
+                <circle cx={width() - right - 142} cy="35" r="4" fill="#1461c9" />
+                <text x={width() - right} y="40" text-anchor="end" font-size="13" fill={ink}>Consensus Residual</text>
+                <text x={width() / 2} y={height() - 8} text-anchor="middle" font-size="14" fill={ink}>Iteration (k)</text>
             </svg>
+            </div>
         </Panel>
     )
 }
@@ -737,7 +769,7 @@ export function SheafAdmmMnistDemo(): JSX.Element {
                     onReset={store.resetCurrent}
                 />
 
-                <main class="grid h-screen min-h-0 grid-rows-[620px_minmax(0,1fr)] gap-3 p-4">
+                <main class="grid h-screen min-h-0 grid-rows-[minmax(420px,1.65fr)_minmax(220px,1fr)] gap-3 p-4">
                     <Show
                         when={store.state.loadStatus === 'ready' && latest()}
                         fallback={
