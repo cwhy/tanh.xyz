@@ -17,4 +17,12 @@ export default defineConfig([
             globals: globals.browser,
         },
     },
+    {
+        files: ["**/*.tsx"],
+        // Solid assigns element refs through compiled JSX, which ESLint's core
+        // no-unassigned-vars rule cannot observe.
+        rules: {
+            "no-unassigned-vars": "off",
+        },
+    },
 ]);

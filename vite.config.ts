@@ -22,6 +22,9 @@ export default defineConfig({
     devtools(),
     nitro({
       preset: 'cloudflare-module',
+      // Keep local SSR on Nitro's Node runner. The Cloudflare Miniflare runner
+      // cannot currently evaluate Vite's workspace-relative module paths.
+      devServer: { runner: 'node-worker' },
     }),
     // this is the plugin that enables path aliases
     viteTsConfigPaths({

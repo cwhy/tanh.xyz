@@ -370,7 +370,7 @@ export function createMnistTrainingStore() {
         let localWindowSamples: GradientRankSample[] = []
         let localTopWindowLatest: GradientRankSample[] = []
         let localCurve: LossPoint[] = []
-        let localLatestLoss: number | null = null
+        let localLatestLoss: number
         let lastVizAt = performance.now()
 
         const budget = state.sampleBudget
