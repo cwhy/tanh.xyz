@@ -357,7 +357,7 @@ export function NeedleDemo() {
         <SingleStageLayout
             title="Needle SAN"
             subtitle="26M-scale encoder-decoder attention in jax-js"
-            backHref="/"
+            backHref="/demo"
             config={ConfigPanel}
             stage={StagePanel}
         />

@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Research notes, technical essays, and printable papers from tanh.xyz.">
+  <title>Research notes — tanh.xyz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&amp;family=Patrick+Hand&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #fdfbf7;
+      --paper-deep: #f4eee3;
+      --ink: #2d2d2d;
+      --ink-soft: #69645f;
+      --red: #ff4d4d;
+      --red-deep: #d93636;
+      --blue: #2d5da1;
+      --blue-soft: #dce8f8;
+      --yellow: #fff2a8;
+      --marker: "Kalam", "Comic Sans MS", cursive;
+      --hand: "Patrick Hand", "Comic Sans MS", cursive;
+      --mono: "Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --max: 1180px;
+      --wobble: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { color-scheme: light; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image:
+        radial-gradient(circle at 1px 1px, rgba(45, 45, 45, .1) 1px, transparent 1.1px),
+        linear-gradient(rgba(45, 93, 161, .027) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45, 93, 161, .027) 1px, transparent 1px);
+      background-size: 24px 24px, 96px 96px, 96px 96px;
+      font: 20px/1.5 var(--hand);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection { background: var(--yellow); }
+
+    a { color: inherit; }
+
+    .shell {
+      width: min(var(--max), calc(100% - clamp(40px, 7vw, 112px)));
+      margin-inline: auto;
+    }
+
+    .site-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 96px;
+      gap: 24px;
+      border-bottom: 3px solid var(--ink);
+    }
+
+    .brand,
+    .demos-link {
+      position: relative;
+      text-decoration: none;
+      font-family: var(--marker);
+    }
+
+    .brand {
+      font-size: clamp(1.7rem, 2.6vw, 2.35rem);
+      font-weight: 700;
+      letter-spacing: -.04em;
+      transform: rotate(-1deg);
+    }
+
+    .demos-link {
+      color: var(--blue);
+      font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+    }
+
+    .brand:hover,
+    .demos-link:hover { color: var(--red-deep); }
+
+    main { padding: clamp(56px, 8vw, 104px) 0 clamp(72px, 10vw, 132px); }
+
+    .intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(240px, .65fr);
+      align-items: end;
+      gap: clamp(36px, 8vw, 104px);
+      padding-bottom: clamp(52px, 8vw, 88px);
+    }
+
+    h1 {
+      max-width: 760px;
+      margin: 0 0 22px;
+      font: 700 clamp(3.8rem, 8vw, 7.5rem)/.9 var(--marker);
+      letter-spacing: -.065em;
+    }
+
+    .lede {
+      max-width: 700px;
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: clamp(1.25rem, 2.1vw, 1.65rem);
+      line-height: 1.35;
+    }
+
+    .format-note {
+      position: relative;
+      margin: 0 0 8px;
+      padding: 22px 24px;
+      border: 2px solid var(--ink);
+      border-radius: var(--wobble);
+      background: var(--yellow);
+      box-shadow: 4px 4px 0 var(--ink);
+      font-size: 1.05rem;
+      transform: rotate(1deg);
+    }
+
+    .format-note strong {
+      display: block;
+      margin-bottom: 6px;
+      font-family: var(--marker);
+      font-size: 1.2rem;
+    }
+
+    .format-note span {
+      display: block;
+      color: var(--ink-soft);
+      font: .67rem/1.6 var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .shelf {
+      border-top: 3px solid var(--ink);
+    }
+
+    .shelf-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 24px 0 18px;
+      border-bottom: 1px dashed rgba(45, 45, 45, .45);
+    }
+
+    h2 {
+      margin: 0;
+      font: 700 clamp(1.8rem, 3vw, 2.6rem)/1 var(--marker);
+      letter-spacing: -.035em;
+    }
+
+    .count {
+      color: var(--ink-soft);
+      font: .68rem var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .empty-state {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: clamp(24px, 5vw, 60px);
+      min-height: 280px;
+      padding: clamp(36px, 6vw, 72px) 0;
+    }
+
+    .empty-mark {
+      display: grid;
+      width: clamp(110px, 14vw, 160px);
+      aspect-ratio: 1;
+      place-items: center;
+      border: 3px solid var(--ink);
+      border-radius: var(--wobble);
+      background: var(--blue-soft);
+      box-shadow: 6px 6px 0 var(--ink);
+      color: var(--blue);
+      font: 700 clamp(2.7rem, 6vw, 4.8rem)/1 var(--marker);
+      transform: rotate(-2deg);
+    }
+
+    .empty-state p { margin: 0; }
+
+    .empty-title {
+      margin-bottom: 8px !important;
+      font: 700 clamp(1.7rem, 3vw, 2.4rem)/1.1 var(--marker);
+    }
+
+    .empty-copy {
+      max-width: 650px;
+      color: var(--ink-soft);
+      font-size: clamp(1.1rem, 2vw, 1.35rem);
+    }
+
+    .site-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 100px;
+      gap: 24px;
+      border-top: 3px solid var(--ink);
+      color: var(--ink-soft);
+    }
+
+    .site-footer p { margin: 0; }
+
+    .site-footer .rule {
+      font: .66rem var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    @media (max-width: 720px) {
+      html,
+      body { overflow-x: hidden; }
+      .shell {
+        width: auto;
+        max-width: none;
+        margin-inline: 16px;
+      }
+      .site-header { min-height: 80px; gap: 12px; }
+      .brand { flex: 0 0 auto; font-size: 1.55rem; }
+      .demos-link { min-width: 0; font-size: 1.05rem; white-space: nowrap; }
+      .desktop-only { display: none; }
+      main { padding-top: 48px; }
+      .intro { grid-template-columns: 1fr; gap: 32px; }
+      .intro > *,
+      .empty-state > * { min-width: 0; max-width: 100%; }
+      h1 { font-size: clamp(3.35rem, 18vw, 4.4rem); }
+      .lede,
+      .empty-title,
+      .empty-copy { overflow-wrap: anywhere; }
+      .format-note { width: 100%; max-width: 340px; }
+      .empty-state { grid-template-columns: 1fr; }
+      .empty-mark { width: 104px; }
+      .site-footer { align-items: flex-start; flex-direction: column; justify-content: center; padding: 24px 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header shell">
+    <a class="brand" href="/" aria-label="tanh.xyz home">tanh.xyz</a>
+    <a class="demos-link" href="/demo"><span class="desktop-only">Neural </span>demos ↗</a>
+  </header>
+
+  <main class="shell">
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">Research notes</h1>
+        <p class="lede">Technical essays, working notes, and printable papers—kept close to the questions that made them useful.</p>
+      </div>
+
+      <p class="format-note">
+        <strong>Two formats, one shelf.</strong>
+        <span>Interactive HTML · Printable PDF</span>
+      </p>
+    </section>
+
+    <section class="shelf" aria-labelledby="shelf-title">
+      <div class="shelf-heading">
+        <h2 id="shelf-title">The shelf</h2>
+        <span class="count">1 note</span>
+      </div>
+
+      <div class="empty-state">
+        <div class="empty-mark" aria-hidden="true">01</div>
+        <div>
+          <p class="empty-title"><a href="./unified-rl.html">Unified RL: one connected learning loop ↗</a></p>
+          <p class="empty-copy">An animated SVG connecting acting, learned dynamics, experience, targets, and network updates. <span class="count">Interactive HTML</span></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer shell">
+    <p>Research notes from tanh.xyz.</p>
+    <p class="rule">HTML + PDF only</p>
+  </footer>
+</body>
+</html>

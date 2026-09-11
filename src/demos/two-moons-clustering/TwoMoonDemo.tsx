@@ -277,7 +277,7 @@ export function TwoMoonDemo() {
         <SingleStageLayout
             title="Two-Moon Classification"
             subtitle="Train a neural network to classify two interleaving half-moon shapes."
-            backHref="/"
+            backHref="/demo"
             backLabel="Back to Demos"
             config={ConfigPanel}
             stage={StagePanel}

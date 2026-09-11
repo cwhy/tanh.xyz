@@ -684,7 +684,7 @@ export function DenseAssociativeMemoryDemo() {
         <SingleStageFullLayout
             title="Dense Associative Memory"
             subtitle="Biologically plausible memory with threshold nonlinearity and exponential capacity. Based on Kafraj, Krotov & Latham (2026)."
-            backHref="/"
+            backHref="/demo"
             backLabel="Back"
             config={ControlPanel}
             stage={VisualizationPanel}

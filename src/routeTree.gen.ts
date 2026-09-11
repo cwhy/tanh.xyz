@@ -10,194 +10,233 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DemosAdditionGrokkingRouteImport } from './routes/demos/addition-grokking'
-import { Route as DemosDamTestRouteImport } from './routes/demos/dam-test'
-import { Route as DemosDenseAssociativeMemoryRouteImport } from './routes/demos/dense-associative-memory'
-import { Route as DemosLinearSystemsRouteImport } from './routes/demos/linear-systems'
-import { Route as DemosMnistNkClusteringRouteImport } from './routes/demos/mnist-nk-clustering'
-import { Route as DemosMnistTrainingRouteImport } from './routes/demos/mnist-training'
-import { Route as DemosNeedleRouteImport } from './routes/demos/needle'
-import { Route as DemosNkClusteringRouteImport } from './routes/demos/nk-clustering'
-import { Route as DemosOnlineKMeansRouteImport } from './routes/demos/online-k-means'
-import { Route as DemosRivalKRouteImport } from './routes/demos/rival-k'
-import { Route as DemosSheafAdmmMnistRouteImport } from './routes/demos/sheaf-admm-mnist'
-import { Route as DemosTwoMoonRouteImport } from './routes/demos/two-moon'
+import { Route as DemoIndexRouteImport } from './routes/demo/index'
+import { Route as DemoAdditionGrokkingRouteImport } from './routes/demo/addition-grokking'
+import { Route as DemoDamTestRouteImport } from './routes/demo/dam-test'
+import { Route as DemoDenseAssociativeMemoryRouteImport } from './routes/demo/dense-associative-memory'
+import { Route as DemoLinearSystemsRouteImport } from './routes/demo/linear-systems'
+import { Route as DemoMnistNkClusteringRouteImport } from './routes/demo/mnist-nk-clustering'
+import { Route as DemoMnistTrainingRouteImport } from './routes/demo/mnist-training'
+import { Route as DemoNeedleRouteImport } from './routes/demo/needle'
+import { Route as DemoNkClusteringRouteImport } from './routes/demo/nk-clustering'
+import { Route as DemoOnlineKMeansRouteImport } from './routes/demo/online-k-means'
+import { Route as DemoRivalKRouteImport } from './routes/demo/rival-k'
+import { Route as DemoSheafAdmmMnistRouteImport } from './routes/demo/sheaf-admm-mnist'
+import { Route as DemoTwoMoonRouteImport } from './routes/demo/two-moon'
+import { Route as DemosIndexRouteImport } from './routes/demos/index'
+import { Route as DemosSlugRouteImport } from './routes/demos/$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemosAdditionGrokkingRoute = DemosAdditionGrokkingRouteImport.update({
-  id: '/demos/addition-grokking',
-  path: '/demos/addition-grokking',
+const DemoIndexRoute = DemoIndexRouteImport.update({
+  id: '/demo/',
+  path: '/demo/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemosDamTestRoute = DemosDamTestRouteImport.update({
-  id: '/demos/dam-test',
-  path: '/demos/dam-test',
+const DemoAdditionGrokkingRoute = DemoAdditionGrokkingRouteImport.update({
+  id: '/demo/addition-grokking',
+  path: '/demo/addition-grokking',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemosDenseAssociativeMemoryRoute =
-  DemosDenseAssociativeMemoryRouteImport.update({
-    id: '/demos/dense-associative-memory',
-    path: '/demos/dense-associative-memory',
+const DemoDamTestRoute = DemoDamTestRouteImport.update({
+  id: '/demo/dam-test',
+  path: '/demo/dam-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoDenseAssociativeMemoryRoute =
+  DemoDenseAssociativeMemoryRouteImport.update({
+    id: '/demo/dense-associative-memory',
+    path: '/demo/dense-associative-memory',
     getParentRoute: () => rootRouteImport,
   } as any)
-const DemosLinearSystemsRoute = DemosLinearSystemsRouteImport.update({
-  id: '/demos/linear-systems',
-  path: '/demos/linear-systems',
+const DemoLinearSystemsRoute = DemoLinearSystemsRouteImport.update({
+  id: '/demo/linear-systems',
+  path: '/demo/linear-systems',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemosMnistNkClusteringRoute = DemosMnistNkClusteringRouteImport.update({
-  id: '/demos/mnist-nk-clustering',
-  path: '/demos/mnist-nk-clustering',
+const DemoMnistNkClusteringRoute = DemoMnistNkClusteringRouteImport.update({
+  id: '/demo/mnist-nk-clustering',
+  path: '/demo/mnist-nk-clustering',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemosMnistTrainingRoute = DemosMnistTrainingRouteImport.update({
-  id: '/demos/mnist-training',
-  path: '/demos/mnist-training',
+const DemoMnistTrainingRoute = DemoMnistTrainingRouteImport.update({
+  id: '/demo/mnist-training',
+  path: '/demo/mnist-training',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemosNeedleRoute = DemosNeedleRouteImport.update({
-  id: '/demos/needle',
-  path: '/demos/needle',
+const DemoNeedleRoute = DemoNeedleRouteImport.update({
+  id: '/demo/needle',
+  path: '/demo/needle',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemosNkClusteringRoute = DemosNkClusteringRouteImport.update({
-  id: '/demos/nk-clustering',
-  path: '/demos/nk-clustering',
+const DemoNkClusteringRoute = DemoNkClusteringRouteImport.update({
+  id: '/demo/nk-clustering',
+  path: '/demo/nk-clustering',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemosOnlineKMeansRoute = DemosOnlineKMeansRouteImport.update({
-  id: '/demos/online-k-means',
-  path: '/demos/online-k-means',
+const DemoOnlineKMeansRoute = DemoOnlineKMeansRouteImport.update({
+  id: '/demo/online-k-means',
+  path: '/demo/online-k-means',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemosRivalKRoute = DemosRivalKRouteImport.update({
-  id: '/demos/rival-k',
-  path: '/demos/rival-k',
+const DemoRivalKRoute = DemoRivalKRouteImport.update({
+  id: '/demo/rival-k',
+  path: '/demo/rival-k',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemosSheafAdmmMnistRoute = DemosSheafAdmmMnistRouteImport.update({
-  id: '/demos/sheaf-admm-mnist',
-  path: '/demos/sheaf-admm-mnist',
+const DemoSheafAdmmMnistRoute = DemoSheafAdmmMnistRouteImport.update({
+  id: '/demo/sheaf-admm-mnist',
+  path: '/demo/sheaf-admm-mnist',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemosTwoMoonRoute = DemosTwoMoonRouteImport.update({
-  id: '/demos/two-moon',
-  path: '/demos/two-moon',
+const DemoTwoMoonRoute = DemoTwoMoonRouteImport.update({
+  id: '/demo/two-moon',
+  path: '/demo/two-moon',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemosIndexRoute = DemosIndexRouteImport.update({
+  id: '/demos/',
+  path: '/demos/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemosSlugRoute = DemosSlugRouteImport.update({
+  id: '/demos/$slug',
+  path: '/demos/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/demos/addition-grokking': typeof DemosAdditionGrokkingRoute
-  '/demos/dam-test': typeof DemosDamTestRoute
-  '/demos/dense-associative-memory': typeof DemosDenseAssociativeMemoryRoute
-  '/demos/linear-systems': typeof DemosLinearSystemsRoute
-  '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
-  '/demos/mnist-training': typeof DemosMnistTrainingRoute
-  '/demos/needle': typeof DemosNeedleRoute
-  '/demos/nk-clustering': typeof DemosNkClusteringRoute
-  '/demos/online-k-means': typeof DemosOnlineKMeansRoute
-  '/demos/rival-k': typeof DemosRivalKRoute
-  '/demos/sheaf-admm-mnist': typeof DemosSheafAdmmMnistRoute
-  '/demos/two-moon': typeof DemosTwoMoonRoute
+  '/demo/addition-grokking': typeof DemoAdditionGrokkingRoute
+  '/demo/dam-test': typeof DemoDamTestRoute
+  '/demo/dense-associative-memory': typeof DemoDenseAssociativeMemoryRoute
+  '/demo/linear-systems': typeof DemoLinearSystemsRoute
+  '/demo/mnist-nk-clustering': typeof DemoMnistNkClusteringRoute
+  '/demo/mnist-training': typeof DemoMnistTrainingRoute
+  '/demo/needle': typeof DemoNeedleRoute
+  '/demo/nk-clustering': typeof DemoNkClusteringRoute
+  '/demo/online-k-means': typeof DemoOnlineKMeansRoute
+  '/demo/rival-k': typeof DemoRivalKRoute
+  '/demo/sheaf-admm-mnist': typeof DemoSheafAdmmMnistRoute
+  '/demo/two-moon': typeof DemoTwoMoonRoute
+  '/demos/$slug': typeof DemosSlugRoute
+  '/demo/': typeof DemoIndexRoute
+  '/demos/': typeof DemosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/demos/addition-grokking': typeof DemosAdditionGrokkingRoute
-  '/demos/dam-test': typeof DemosDamTestRoute
-  '/demos/dense-associative-memory': typeof DemosDenseAssociativeMemoryRoute
-  '/demos/linear-systems': typeof DemosLinearSystemsRoute
-  '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
-  '/demos/mnist-training': typeof DemosMnistTrainingRoute
-  '/demos/needle': typeof DemosNeedleRoute
-  '/demos/nk-clustering': typeof DemosNkClusteringRoute
-  '/demos/online-k-means': typeof DemosOnlineKMeansRoute
-  '/demos/rival-k': typeof DemosRivalKRoute
-  '/demos/sheaf-admm-mnist': typeof DemosSheafAdmmMnistRoute
-  '/demos/two-moon': typeof DemosTwoMoonRoute
+  '/demo/addition-grokking': typeof DemoAdditionGrokkingRoute
+  '/demo/dam-test': typeof DemoDamTestRoute
+  '/demo/dense-associative-memory': typeof DemoDenseAssociativeMemoryRoute
+  '/demo/linear-systems': typeof DemoLinearSystemsRoute
+  '/demo/mnist-nk-clustering': typeof DemoMnistNkClusteringRoute
+  '/demo/mnist-training': typeof DemoMnistTrainingRoute
+  '/demo/needle': typeof DemoNeedleRoute
+  '/demo/nk-clustering': typeof DemoNkClusteringRoute
+  '/demo/online-k-means': typeof DemoOnlineKMeansRoute
+  '/demo/rival-k': typeof DemoRivalKRoute
+  '/demo/sheaf-admm-mnist': typeof DemoSheafAdmmMnistRoute
+  '/demo/two-moon': typeof DemoTwoMoonRoute
+  '/demos/$slug': typeof DemosSlugRoute
+  '/demo': typeof DemoIndexRoute
+  '/demos': typeof DemosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/demos/addition-grokking': typeof DemosAdditionGrokkingRoute
-  '/demos/dam-test': typeof DemosDamTestRoute
-  '/demos/dense-associative-memory': typeof DemosDenseAssociativeMemoryRoute
-  '/demos/linear-systems': typeof DemosLinearSystemsRoute
-  '/demos/mnist-nk-clustering': typeof DemosMnistNkClusteringRoute
-  '/demos/mnist-training': typeof DemosMnistTrainingRoute
-  '/demos/needle': typeof DemosNeedleRoute
-  '/demos/nk-clustering': typeof DemosNkClusteringRoute
-  '/demos/online-k-means': typeof DemosOnlineKMeansRoute
-  '/demos/rival-k': typeof DemosRivalKRoute
-  '/demos/sheaf-admm-mnist': typeof DemosSheafAdmmMnistRoute
-  '/demos/two-moon': typeof DemosTwoMoonRoute
+  '/demo/addition-grokking': typeof DemoAdditionGrokkingRoute
+  '/demo/dam-test': typeof DemoDamTestRoute
+  '/demo/dense-associative-memory': typeof DemoDenseAssociativeMemoryRoute
+  '/demo/linear-systems': typeof DemoLinearSystemsRoute
+  '/demo/mnist-nk-clustering': typeof DemoMnistNkClusteringRoute
+  '/demo/mnist-training': typeof DemoMnistTrainingRoute
+  '/demo/needle': typeof DemoNeedleRoute
+  '/demo/nk-clustering': typeof DemoNkClusteringRoute
+  '/demo/online-k-means': typeof DemoOnlineKMeansRoute
+  '/demo/rival-k': typeof DemoRivalKRoute
+  '/demo/sheaf-admm-mnist': typeof DemoSheafAdmmMnistRoute
+  '/demo/two-moon': typeof DemoTwoMoonRoute
+  '/demos/$slug': typeof DemosSlugRoute
+  '/demo/': typeof DemoIndexRoute
+  '/demos/': typeof DemosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/demos/addition-grokking'
-    | '/demos/dam-test'
-    | '/demos/dense-associative-memory'
-    | '/demos/linear-systems'
-    | '/demos/mnist-nk-clustering'
-    | '/demos/mnist-training'
-    | '/demos/needle'
-    | '/demos/nk-clustering'
-    | '/demos/online-k-means'
-    | '/demos/rival-k'
-    | '/demos/sheaf-admm-mnist'
-    | '/demos/two-moon'
+    | '/demo/addition-grokking'
+    | '/demo/dam-test'
+    | '/demo/dense-associative-memory'
+    | '/demo/linear-systems'
+    | '/demo/mnist-nk-clustering'
+    | '/demo/mnist-training'
+    | '/demo/needle'
+    | '/demo/nk-clustering'
+    | '/demo/online-k-means'
+    | '/demo/rival-k'
+    | '/demo/sheaf-admm-mnist'
+    | '/demo/two-moon'
+    | '/demos/$slug'
+    | '/demo/'
+    | '/demos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/demos/addition-grokking'
-    | '/demos/dam-test'
-    | '/demos/dense-associative-memory'
-    | '/demos/linear-systems'
-    | '/demos/mnist-nk-clustering'
-    | '/demos/mnist-training'
-    | '/demos/needle'
-    | '/demos/nk-clustering'
-    | '/demos/online-k-means'
-    | '/demos/rival-k'
-    | '/demos/sheaf-admm-mnist'
-    | '/demos/two-moon'
+    | '/demo/addition-grokking'
+    | '/demo/dam-test'
+    | '/demo/dense-associative-memory'
+    | '/demo/linear-systems'
+    | '/demo/mnist-nk-clustering'
+    | '/demo/mnist-training'
+    | '/demo/needle'
+    | '/demo/nk-clustering'
+    | '/demo/online-k-means'
+    | '/demo/rival-k'
+    | '/demo/sheaf-admm-mnist'
+    | '/demo/two-moon'
+    | '/demos/$slug'
+    | '/demo'
+    | '/demos'
   id:
     | '__root__'
     | '/'
-    | '/demos/addition-grokking'
-    | '/demos/dam-test'
-    | '/demos/dense-associative-memory'
-    | '/demos/linear-systems'
-    | '/demos/mnist-nk-clustering'
-    | '/demos/mnist-training'
-    | '/demos/needle'
-    | '/demos/nk-clustering'
-    | '/demos/online-k-means'
-    | '/demos/rival-k'
-    | '/demos/sheaf-admm-mnist'
-    | '/demos/two-moon'
+    | '/demo/addition-grokking'
+    | '/demo/dam-test'
+    | '/demo/dense-associative-memory'
+    | '/demo/linear-systems'
+    | '/demo/mnist-nk-clustering'
+    | '/demo/mnist-training'
+    | '/demo/needle'
+    | '/demo/nk-clustering'
+    | '/demo/online-k-means'
+    | '/demo/rival-k'
+    | '/demo/sheaf-admm-mnist'
+    | '/demo/two-moon'
+    | '/demos/$slug'
+    | '/demo/'
+    | '/demos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DemosAdditionGrokkingRoute: typeof DemosAdditionGrokkingRoute
-  DemosDamTestRoute: typeof DemosDamTestRoute
-  DemosDenseAssociativeMemoryRoute: typeof DemosDenseAssociativeMemoryRoute
-  DemosLinearSystemsRoute: typeof DemosLinearSystemsRoute
-  DemosMnistNkClusteringRoute: typeof DemosMnistNkClusteringRoute
-  DemosMnistTrainingRoute: typeof DemosMnistTrainingRoute
-  DemosNeedleRoute: typeof DemosNeedleRoute
-  DemosNkClusteringRoute: typeof DemosNkClusteringRoute
-  DemosOnlineKMeansRoute: typeof DemosOnlineKMeansRoute
-  DemosRivalKRoute: typeof DemosRivalKRoute
-  DemosSheafAdmmMnistRoute: typeof DemosSheafAdmmMnistRoute
-  DemosTwoMoonRoute: typeof DemosTwoMoonRoute
+  DemoAdditionGrokkingRoute: typeof DemoAdditionGrokkingRoute
+  DemoDamTestRoute: typeof DemoDamTestRoute
+  DemoDenseAssociativeMemoryRoute: typeof DemoDenseAssociativeMemoryRoute
+  DemoLinearSystemsRoute: typeof DemoLinearSystemsRoute
+  DemoMnistNkClusteringRoute: typeof DemoMnistNkClusteringRoute
+  DemoMnistTrainingRoute: typeof DemoMnistTrainingRoute
+  DemoNeedleRoute: typeof DemoNeedleRoute
+  DemoNkClusteringRoute: typeof DemoNkClusteringRoute
+  DemoOnlineKMeansRoute: typeof DemoOnlineKMeansRoute
+  DemoRivalKRoute: typeof DemoRivalKRoute
+  DemoSheafAdmmMnistRoute: typeof DemoSheafAdmmMnistRoute
+  DemoTwoMoonRoute: typeof DemoTwoMoonRoute
+  DemosSlugRoute: typeof DemosSlugRoute
+  DemoIndexRoute: typeof DemoIndexRoute
+  DemosIndexRoute: typeof DemosIndexRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -209,88 +248,109 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demos/addition-grokking': {
-      id: '/demos/addition-grokking'
-      path: '/demos/addition-grokking'
-      fullPath: '/demos/addition-grokking'
-      preLoaderRoute: typeof DemosAdditionGrokkingRouteImport
+    '/demo/': {
+      id: '/demo/'
+      path: '/demo'
+      fullPath: '/demo/'
+      preLoaderRoute: typeof DemoIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demos/dam-test': {
-      id: '/demos/dam-test'
-      path: '/demos/dam-test'
-      fullPath: '/demos/dam-test'
-      preLoaderRoute: typeof DemosDamTestRouteImport
+    '/demo/addition-grokking': {
+      id: '/demo/addition-grokking'
+      path: '/demo/addition-grokking'
+      fullPath: '/demo/addition-grokking'
+      preLoaderRoute: typeof DemoAdditionGrokkingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demos/dense-associative-memory': {
-      id: '/demos/dense-associative-memory'
-      path: '/demos/dense-associative-memory'
-      fullPath: '/demos/dense-associative-memory'
-      preLoaderRoute: typeof DemosDenseAssociativeMemoryRouteImport
+    '/demo/dam-test': {
+      id: '/demo/dam-test'
+      path: '/demo/dam-test'
+      fullPath: '/demo/dam-test'
+      preLoaderRoute: typeof DemoDamTestRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demos/linear-systems': {
-      id: '/demos/linear-systems'
-      path: '/demos/linear-systems'
-      fullPath: '/demos/linear-systems'
-      preLoaderRoute: typeof DemosLinearSystemsRouteImport
+    '/demo/dense-associative-memory': {
+      id: '/demo/dense-associative-memory'
+      path: '/demo/dense-associative-memory'
+      fullPath: '/demo/dense-associative-memory'
+      preLoaderRoute: typeof DemoDenseAssociativeMemoryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demos/mnist-nk-clustering': {
-      id: '/demos/mnist-nk-clustering'
-      path: '/demos/mnist-nk-clustering'
-      fullPath: '/demos/mnist-nk-clustering'
-      preLoaderRoute: typeof DemosMnistNkClusteringRouteImport
+    '/demo/linear-systems': {
+      id: '/demo/linear-systems'
+      path: '/demo/linear-systems'
+      fullPath: '/demo/linear-systems'
+      preLoaderRoute: typeof DemoLinearSystemsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demos/mnist-training': {
-      id: '/demos/mnist-training'
-      path: '/demos/mnist-training'
-      fullPath: '/demos/mnist-training'
-      preLoaderRoute: typeof DemosMnistTrainingRouteImport
+    '/demo/mnist-nk-clustering': {
+      id: '/demo/mnist-nk-clustering'
+      path: '/demo/mnist-nk-clustering'
+      fullPath: '/demo/mnist-nk-clustering'
+      preLoaderRoute: typeof DemoMnistNkClusteringRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demos/needle': {
-      id: '/demos/needle'
-      path: '/demos/needle'
-      fullPath: '/demos/needle'
-      preLoaderRoute: typeof DemosNeedleRouteImport
+    '/demo/mnist-training': {
+      id: '/demo/mnist-training'
+      path: '/demo/mnist-training'
+      fullPath: '/demo/mnist-training'
+      preLoaderRoute: typeof DemoMnistTrainingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demos/nk-clustering': {
-      id: '/demos/nk-clustering'
-      path: '/demos/nk-clustering'
-      fullPath: '/demos/nk-clustering'
-      preLoaderRoute: typeof DemosNkClusteringRouteImport
+    '/demo/needle': {
+      id: '/demo/needle'
+      path: '/demo/needle'
+      fullPath: '/demo/needle'
+      preLoaderRoute: typeof DemoNeedleRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demos/online-k-means': {
-      id: '/demos/online-k-means'
-      path: '/demos/online-k-means'
-      fullPath: '/demos/online-k-means'
-      preLoaderRoute: typeof DemosOnlineKMeansRouteImport
+    '/demo/nk-clustering': {
+      id: '/demo/nk-clustering'
+      path: '/demo/nk-clustering'
+      fullPath: '/demo/nk-clustering'
+      preLoaderRoute: typeof DemoNkClusteringRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demos/rival-k': {
-      id: '/demos/rival-k'
-      path: '/demos/rival-k'
-      fullPath: '/demos/rival-k'
-      preLoaderRoute: typeof DemosRivalKRouteImport
+    '/demo/online-k-means': {
+      id: '/demo/online-k-means'
+      path: '/demo/online-k-means'
+      fullPath: '/demo/online-k-means'
+      preLoaderRoute: typeof DemoOnlineKMeansRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demos/sheaf-admm-mnist': {
-      id: '/demos/sheaf-admm-mnist'
-      path: '/demos/sheaf-admm-mnist'
-      fullPath: '/demos/sheaf-admm-mnist'
-      preLoaderRoute: typeof DemosSheafAdmmMnistRouteImport
+    '/demo/rival-k': {
+      id: '/demo/rival-k'
+      path: '/demo/rival-k'
+      fullPath: '/demo/rival-k'
+      preLoaderRoute: typeof DemoRivalKRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demos/two-moon': {
-      id: '/demos/two-moon'
-      path: '/demos/two-moon'
-      fullPath: '/demos/two-moon'
-      preLoaderRoute: typeof DemosTwoMoonRouteImport
+    '/demo/sheaf-admm-mnist': {
+      id: '/demo/sheaf-admm-mnist'
+      path: '/demo/sheaf-admm-mnist'
+      fullPath: '/demo/sheaf-admm-mnist'
+      preLoaderRoute: typeof DemoSheafAdmmMnistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/two-moon': {
+      id: '/demo/two-moon'
+      path: '/demo/two-moon'
+      fullPath: '/demo/two-moon'
+      preLoaderRoute: typeof DemoTwoMoonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demos/': {
+      id: '/demos/'
+      path: '/demos'
+      fullPath: '/demos/'
+      preLoaderRoute: typeof DemosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demos/$slug': {
+      id: '/demos/$slug'
+      path: '/demos/$slug'
+      fullPath: '/demos/$slug'
+      preLoaderRoute: typeof DemosSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -298,18 +358,21 @@ declare module '@tanstack/solid-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DemosAdditionGrokkingRoute: DemosAdditionGrokkingRoute,
-  DemosDamTestRoute: DemosDamTestRoute,
-  DemosDenseAssociativeMemoryRoute: DemosDenseAssociativeMemoryRoute,
-  DemosLinearSystemsRoute: DemosLinearSystemsRoute,
-  DemosMnistNkClusteringRoute: DemosMnistNkClusteringRoute,
-  DemosMnistTrainingRoute: DemosMnistTrainingRoute,
-  DemosNeedleRoute: DemosNeedleRoute,
-  DemosNkClusteringRoute: DemosNkClusteringRoute,
-  DemosOnlineKMeansRoute: DemosOnlineKMeansRoute,
-  DemosRivalKRoute: DemosRivalKRoute,
-  DemosSheafAdmmMnistRoute: DemosSheafAdmmMnistRoute,
-  DemosTwoMoonRoute: DemosTwoMoonRoute,
+  DemoAdditionGrokkingRoute: DemoAdditionGrokkingRoute,
+  DemoDamTestRoute: DemoDamTestRoute,
+  DemoDenseAssociativeMemoryRoute: DemoDenseAssociativeMemoryRoute,
+  DemoLinearSystemsRoute: DemoLinearSystemsRoute,
+  DemoMnistNkClusteringRoute: DemoMnistNkClusteringRoute,
+  DemoMnistTrainingRoute: DemoMnistTrainingRoute,
+  DemoNeedleRoute: DemoNeedleRoute,
+  DemoNkClusteringRoute: DemoNkClusteringRoute,
+  DemoOnlineKMeansRoute: DemoOnlineKMeansRoute,
+  DemoRivalKRoute: DemoRivalKRoute,
+  DemoSheafAdmmMnistRoute: DemoSheafAdmmMnistRoute,
+  DemoTwoMoonRoute: DemoTwoMoonRoute,
+  DemosSlugRoute: DemosSlugRoute,
+  DemoIndexRoute: DemoIndexRoute,
+  DemosIndexRoute: DemosIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

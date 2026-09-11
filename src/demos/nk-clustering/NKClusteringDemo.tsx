@@ -416,7 +416,7 @@ export function NKClusteringDemo() {
         <SingleStageLayout
             title="2D Point NK Clustering"
             subtitle="Online clustering with bounded cluster sizes. N = base max size, K = neighbors for medoid."
-            backHref="/"
+            backHref="/demo"
             backLabel="Back to Demos"
             config={ConfigPanel}
             stage={StagePanel}

@@ -4,7 +4,7 @@
  * This runs in the browser (needs jax-js WebGPU/WASM).
  * Open the browser dev console to see test results.
  * 
- * Route: /demos/dam-test
+ * Route: /demo/dam-test
  */
 import { onMount } from 'solid-js'
 import { numpy as np, tree } from '@jax-js/jax'
