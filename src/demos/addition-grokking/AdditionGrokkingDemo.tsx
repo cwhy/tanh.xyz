@@ -343,7 +343,7 @@ export function AdditionGrokkingDemo() {
                     {' '}default (plus MLP baseline) on 10-digit addition.
                 </>
             )}
-            backHref="/"
+            backHref="/demo"
             backLabel="Back to Demos"
             config={ConfigPanel}
             stage={StagePanel}

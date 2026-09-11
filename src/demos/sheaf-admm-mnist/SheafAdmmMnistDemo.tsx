@@ -167,7 +167,7 @@ function Sidebar(props: {
     return (
         <aside class="h-screen min-h-0 overflow-hidden border-r-2 border-[#2d2d2d] px-5 py-6">
             <h1 class="mb-4 whitespace-nowrap font-heading text-[26px] font-bold leading-none">Sheaf-ADMM MNIST</h1>
-            <a href="/" class="mb-5 inline-flex items-center gap-2 text-[16px] hover:text-[#2d5da1]">
+            <a href="/demo" class="mb-5 inline-flex items-center gap-2 text-[16px] hover:text-[#2d5da1]">
                 <span class="text-xl leading-none">‹</span>
                 Back to Demos
             </a>

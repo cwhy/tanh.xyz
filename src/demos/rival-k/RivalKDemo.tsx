@@ -425,7 +425,7 @@ export function RivalKDemo() {
         <SingleStageLayout
             title="2D Rival-K Clustering"
             subtitle="Online clustering with only K — clusters self-regulate via evenness-based eviction."
-            backHref="/"
+            backHref="/demo"
             backLabel="Back to Demos"
             config={ConfigPanel}
             stage={StagePanel}

@@ -18,7 +18,7 @@ export function LinearSystemsDemo() {
         <ControlSignalBoard
             title="Linear Systems"
             subtitle="Matrix multiplication representing linear state evolution over time."
-            backHref="/"
+            backHref="/demo"
             backLabel="Back"
             initialTopHeightVh={50}
             top={<VisualizationPanel />}

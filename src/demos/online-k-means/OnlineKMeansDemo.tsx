@@ -598,7 +598,7 @@ export function OnlineKMeansDemo() {
         <SingleStageLayout
             title={pageTitle()}
             subtitle={pageSubtitle()}
-            backHref="/"
+            backHref="/demo"
             backLabel="Back to Demos"
             config={ConfigPanel}
             stage={StagePanel}

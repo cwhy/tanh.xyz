@@ -423,7 +423,7 @@ export function MnistTrainingDemo() {
         <SingleStageFullLayout
             title="MNIST with Gradient Norm"
             subtitle="Online training on a shuffled MNIST subset with seeded reproducibility and gradient-norm sample tracking."
-            backHref="/"
+            backHref="/demo"
             backLabel="Back to Demos"
             config={ConfigPanel}
             stage={StagePanel}

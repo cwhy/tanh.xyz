@@ -27,7 +27,7 @@ export const Route = createRootRouteWithContext()({
     <main class="min-h-screen flex items-center justify-center p-6">
       <div class="text-center space-y-3">
         <h1 class="text-3xl font-bold">Page Not Found</h1>
-        <a href="/" class="link link-primary">Back to Demos</a>
+        <a href="/" class="link link-primary">Back to Site Index</a>
       </div>
     </main>
   ),

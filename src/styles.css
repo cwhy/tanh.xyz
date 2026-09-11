@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Patrick+Hand&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Patrick+Hand&family=Space+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 @plugin "daisyui" {
   exclude: radialprogress, properties;
@@ -16,6 +16,7 @@
 
   --font-sans: 'Patrick Hand', 'Comic Sans MS', cursive, sans-serif;
   --font-heading: 'Kalam', 'Comic Sans MS', cursive, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 :root {
@@ -40,6 +41,82 @@ body {
   font-size: 18px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.notebook-shell {
+  width: min(var(--notebook-shell-max, 1320px), calc(100% - clamp(80px, 12vw, 192px)));
+  margin-inline: auto;
+}
+
+.notebook-shell--demos {
+  --notebook-shell-max: 1360px;
+}
+
+.notebook-shell--wide {
+  --notebook-shell-max: 1440px;
+}
+
+.notebook-bg-dots {
+  background-color: #fdfbf7;
+  background-image: radial-gradient(circle at 1px 1px, rgba(45, 45, 45, .1) 1px, transparent 1.1px);
+  background-size: 24px 24px;
+}
+
+.notebook-bg-grid {
+  background-color: #fdfbf7;
+  background-image:
+    linear-gradient(rgba(45, 93, 161, .075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 93, 161, .075) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+.footer-wordmark {
+  display: inline-flex;
+  align-items: center;
+  color: #324354;
+  font-family: 'Kalam', 'Comic Sans MS', cursive, sans-serif;
+  font-size: clamp(2.5rem, 4.5vw, 3.35rem);
+  font-weight: 700;
+  line-height: .78;
+  letter-spacing: -.055em;
+}
+
+.footer-wordmark__tanh,
+.footer-wordmark__xyz {
+  position: relative;
+  display: inline-block;
+}
+
+.footer-wordmark__tanh::after,
+.footer-wordmark__xyz::before {
+  position: absolute;
+  left: 0;
+  width: 103%;
+  height: .075em;
+  border-radius: 999px;
+  background: #b6a093;
+  content: '';
+  transform-origin: left center;
+}
+
+.footer-wordmark__tanh::after {
+  bottom: -.095em;
+  transform: rotate(-.55deg) scaleX(.98);
+}
+
+.footer-wordmark__xyz::before {
+  top: -.055em;
+  transform: rotate(.7deg) scaleX(.96);
+}
+
+.footer-wordmark__dot {
+  width: .72em;
+  color: #662200;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: .74em;
+  line-height: 1;
+  text-align: center;
+  transform: translateY(-.055em);
 }
 
 code {

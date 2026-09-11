@@ -51,8 +51,9 @@ bun run deploy
 ```
 src/
 ├── routes/
-│   ├── index.tsx           # Demo gallery landing page
-│   ├── demos/
+│   ├── index.tsx           # Site index for demos and notes
+│   ├── demo/
+│   │   ├── index.tsx       # Demo gallery
 │   │   └── two-moon.tsx    # Two-Moon Classification demo
 │   └── __root.tsx          # Root layout
 ├── components/
@@ -66,7 +67,7 @@ src/
 
 ## 🎯 Adding New Demos
 
-1. Create a new route file in `src/routes/demos/your-demo.tsx`
+1. Create a new route file in `src/routes/demo/your-demo.tsx`
 2. Implement your demo component
 3. Add a new `DemoCard` entry in `src/routes/index.tsx`
 4. Update the card's `status` from `"coming-soon"` to `"ready"` when complete
