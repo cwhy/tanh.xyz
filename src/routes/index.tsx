@@ -36,6 +36,28 @@ const demoColumns: DemoDirectoryItem[][] = [
   ],
 ]
 
+type NoteItem = {
+  index: string
+  title: string
+  href: string
+  meta: string
+}
+
+const researchNotes: NoteItem[] = [
+  {
+    index: '01',
+    title: 'Unified RL: one connected learning loop',
+    href: '/research-notes/unified-rl.html',
+    meta: 'Animated SVG · HTML',
+  },
+  {
+    index: '02',
+    title: 'Can Jev be jailbroken?',
+    href: '/research-notes/jev-prompt-manipulation.html',
+    meta: '22 September 2026 · HTML',
+  },
+]
+
 export const Route = createFileRoute('/')({
   component: SiteIndex,
   head: () => ({
@@ -43,7 +65,7 @@ export const Route = createFileRoute('/')({
       { title: 'tanh.xyz — Experiments and notes' },
       {
         name: 'description',
-        content: 'Interactive neural demos, research notes, and critical readings.',
+        content: 'Interactive neural network demos, write-ups of experiments, and notes on papers.',
       },
     ],
   }),
@@ -126,6 +148,22 @@ function DemoRow(props: { item: DemoDirectoryItem }) {
   )
 }
 
+function NoteCard(props: { note: NoteItem }) {
+  return (
+    <a
+      href={props.note.href}
+      class="group grid border-b-2 border-[#2d2d2d] py-8 text-[#2d2d2d] transition-colors hover:bg-[#fff2a8]/55 focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2d5da1] sm:grid-cols-[110px_1fr_auto] sm:items-center sm:gap-6 sm:px-6 md:py-10"
+    >
+      <span class="font-heading text-6xl font-bold text-[#d93636] sm:text-7xl">{props.note.index}</span>
+      <span class="mt-4 min-w-0 sm:mt-0">
+        <span class="block font-heading text-2xl font-bold leading-tight md:text-4xl">{props.note.title}</span>
+        <span class="mt-3 block font-mono text-sm text-[#69645f] md:text-base">{props.note.meta}</span>
+      </span>
+      <span class="mt-6 text-[#2d5da1] transition-transform group-hover:translate-x-1 sm:mt-0"><ArrowIcon /></span>
+    </a>
+  )
+}
+
 function SiteIndex() {
   return (
     <div
@@ -176,18 +214,16 @@ function SiteIndex() {
         </section>
 
         <section id="research-notes" class="notebook-bg-grid scroll-mt-6 border-b-2 border-[#2d2d2d] py-16 md:py-24">
-          <div class="notebook-shell grid min-h-[320px] gap-12 md:grid-cols-[minmax(260px,.7fr)_minmax(0,1.3fr)] md:items-center md:gap-20">
+          <div class="notebook-shell grid gap-12 md:grid-cols-[minmax(280px,.7fr)_minmax(0,1.6fr)] md:items-center md:gap-16">
             <div>
               <h2 class="inline-block border-b-[5px] border-[#f0be24] pb-1 font-heading text-5xl font-bold">Research notes</h2>
-              <p class="mt-6 max-w-sm font-sans text-xl leading-snug md:text-2xl">Technical essays, working notes, and printable papers.</p>
+              <p class="mt-6 max-w-sm font-sans text-xl leading-snug md:text-2xl">Longer write-ups of experiments, with the code and recorded data behind them.</p>
               <div class="mt-7"><TextLink href="/research-notes/">Open research notes</TextLink></div>
             </div>
 
-            <p class="justify-self-start font-heading text-3xl leading-tight md:justify-self-center md:text-4xl">
-              <span aria-hidden="true" class="mr-4 text-[#f0be24]">›</span>
-              <a href="/research-notes/unified-rl.html" class="text-[#2d5da1] hover:underline">Unified RL: one connected learning loop</a>
-              <span aria-hidden="true" class="ml-4 text-[#f0be24]">‹</span>
-            </p>
+            <div class="border-t-2 border-[#2d2d2d]">
+              <For each={researchNotes}>{(note) => <NoteCard note={note} />}</For>
+            </div>
           </div>
         </section>
 
@@ -195,7 +231,7 @@ function SiteIndex() {
           <div class="notebook-shell grid min-h-[360px] gap-12 md:grid-cols-[minmax(280px,.7fr)_minmax(0,1.6fr)] md:items-center md:gap-16">
             <div>
               <h2 class="inline-block border-b-[5px] border-[#f0be24] pb-1 font-heading text-5xl font-bold">Paper notes</h2>
-              <p class="mt-6 max-w-sm font-sans text-xl leading-snug md:text-2xl">Introductions, diagrams, and critical readings of machine-learning papers.</p>
+              <p class="mt-6 max-w-sm font-sans text-xl leading-snug md:text-2xl">Notes and diagrams from reading machine-learning papers.</p>
               <div class="mt-7"><TextLink href="/paper-notes/">Read paper notes</TextLink></div>
             </div>
 
