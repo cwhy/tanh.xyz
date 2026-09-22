@@ -1,0 +1,83 @@
+Expanded Jev model-safety experiment
+===================================
+
+The published results are configuration-specific. See runtime-manifest.json
+for exact commits, weights, backend differences, and leaderboard selection.
+No credentials are included. Jev reruns incur API usage.
+
+Repository layout
+-----------------
+Scripts live in scripts/jev_prompt_manipulation/.
+Evidence lives in public/data/demos/jev-prompt-manipulation/.
+The report is public/research-notes/jev-prompt-manipulation.html.
+The original 160-call pilot is archived separately and excluded from expanded counts.
+
+Jev
+---
+Install Python 3.12 and typesafe-sdk==0.6.0. Configure JEV_API_KEY in the
+environment or repository root .env. Do not put the key into public artifacts.
+
+python scripts/jev_prompt_manipulation/advanced.py --backend jev --phase development --out /tmp/jev-development.jsonl
+python scripts/jev_prompt_manipulation/refine.py --backend jev --out /tmp/jev-refinement.jsonl
+
+SemIf on a remote CUDA GPU
+---------------------
+Clone https://github.com/TheoLeeCJ/SemIf and check out the code commit recorded
+in runtime-manifest.json. Install its pinned package in a Python 3.12
+virtual environment, plus typesafe-sdk==0.6.0. Expose exactly one CUDA GPU, e.g. CUDA_VISIBLE_DEVICES=0.
+The runner downloads Qwen/Qwen3.5-4B revision
+851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a (about 9 GB), with no quantization.
+
+python scripts/jev_prompt_manipulation/advanced.py --backend semif --phase development --out /tmp/semif-development.jsonl
+python scripts/jev_prompt_manipulation/refine.py --backend semif --out /tmp/semif-refinement.jsonl
+
+Winnow on a remote CUDA GPU
+----------------------
+Clone https://github.com/EldanRing/winnow-inference and check out
+6c2b3c04e248a319f2cb43832628eba03e55fe38. Install CMake and CUDA; build with python3 scripts/build.py --backend cuda --cuda-arch 89 --jobs 8 for an RTX 4090.
+Download gguf/Winnow-12B-Q8_0.gguf from EldanRing/Winnow-12B, revision
+b6ac22b0d51b69b18200acacb3fbdd98073fffe8. Verify the checksum in the manifest.
+No vision projector is needed. From the Winnow source directory:
+
+python3 scripts/serve.py --model /path/to/Winnow-12B-Q8_0.gguf --context 8192 --decision-parallel 1 --chat-parallel 1 --cache q8_0 --gpu 1 --memory exclusive --port 8091
+
+Then from this repository:
+python scripts/jev_prompt_manipulation/advanced.py --backend winnow --phase development --out /tmp/winnow-development.jsonl
+python scripts/jev_prompt_manipulation/refine.py --backend winnow --out /tmp/winnow-refinement.jsonl
+
+Run each comparator on a separate remote GPU. The authorizing user requested
+that no further model inference run on the laptop. Model downloads and setup
+are outside measurements. Preliminary Mac results are excluded from this suite.
+
+Isolated CUDA compiler setup used for this run
+-----------------------------------------------
+The remote server had drivers but no CUDA compiler. The experiment installed
+cuda-toolkit[nvcc,cudart,cublas,cccl]==13.0.2, CMake and Ninja in its own venv.
+Pin nvidia-nvvm==13.0.88 and nvidia-cuda-crt==13.0.88 to match nvcc; the toolkit
+meta-package otherwise resolved incompatible 13.4 components in this run.
+Set CUDAToolkit_ROOT to site-packages/nvidia/cu13, add its bin to PATH and
+lib to LD_LIBRARY_PATH/LIBRARY_PATH. Supply unversioned libcudart.so,
+libcublas.so and libcublasLt.so symlinks to the corresponding .so.13 files.
+The official build and native unit checks passed. No system packages changed.
+
+Selection and held-out evaluation
+---------------------------------
+select.py reads the six canonical development/refinement filenames in the
+public evidence directory, validates completeness, then freezes one scope/policy
+and one direct-label winner per item/model. Their deduplicated union is sent to
+all models. The existing selection is immutable evidence: do not overwrite it.
+To repeat the original held-out experiment, use selected-attacks.json directly:
+
+python scripts/jev_prompt_manipulation/advanced.py --backend jev --phase heldout --selected public/data/demos/jev-prompt-manipulation/selected-attacks.json --out /tmp/jev-heldout.jsonl
+
+Replace jev with semif or winnow for other backends. All output paths must be new.
+The runner records basic, hardened, and strict policies with two repeats each.
+There is no claim that repeats are statistically independent. Query order is
+fixed. The local model scores may vary slightly with GPU arithmetic.
+
+To generate the canonical report from its original complete evidence:
+python scripts/jev_prompt_manipulation/render_advanced.py
+
+The renderer checks expected counts and probability distributions. The first
+pilot renderer, render.py, produces only the historical pilot content; do not
+use it to replace the expanded note.

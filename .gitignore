@@ -10,3 +10,10 @@ dist-ssr
 .output
 .claude
 checkpoints/
+.env
+
+# Local unpublished research-note archives
+/private/
+
+# Python bytecode from research-note scripts
+__pycache__/
