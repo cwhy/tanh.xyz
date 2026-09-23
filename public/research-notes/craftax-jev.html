@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Driving the Craftax-Classic survival environment with one TypeSafe System One call per step: what a typed Choice can and cannot do as a policy.">
+  <title>Jev plays Craftax — tanh.xyz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&amp;family=Patrick+Hand&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #fdfbf7;
+      --paper-deep: #f4eee3;
+      --ink: #2d2d2d;
+      --ink-soft: #69645f;
+      --red: #ff4d4d;
+      --red-deep: #d93636;
+      --blue: #2d5da1;
+      --blue-soft: #dce8f8;
+      --yellow: #fff2a8;
+      --marker: "Kalam", "Comic Sans MS", cursive;
+      --hand: "Patrick Hand", "Comic Sans MS", cursive;
+      --mono: "Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --max: 1180px;
+      --wobble: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { color-scheme: light; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image:
+        radial-gradient(circle at 1px 1px, rgba(45, 45, 45, .1) 1px, transparent 1.1px),
+        linear-gradient(rgba(45, 93, 161, .027) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45, 93, 161, .027) 1px, transparent 1px);
+      background-size: 24px 24px, 96px 96px, 96px 96px;
+      font: 20px/1.55 var(--hand);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection { background: var(--yellow); }
+
+    a { color: var(--blue); }
+    a:hover { color: var(--red-deep); }
+
+    .shell {
+      width: min(var(--max), calc(100% - clamp(40px, 7vw, 112px)));
+      margin-inline: auto;
+    }
+
+    .site-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 96px;
+      gap: 24px;
+      border-bottom: 3px solid var(--ink);
+    }
+
+    .brand {
+      font-family: var(--marker);
+      font-size: clamp(1.7rem, 2.6vw, 2.35rem);
+      font-weight: 700;
+      letter-spacing: -.04em;
+      color: inherit;
+      text-decoration: none;
+      transform: rotate(-1deg);
+    }
+
+    .back-link {
+      color: var(--blue);
+      font-family: var(--marker);
+      font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+      text-decoration: none;
+    }
+
+    main { padding: clamp(48px, 7vw, 88px) 0 clamp(64px, 9vw, 120px); }
+
+    .eyebrow {
+      color: var(--ink-soft);
+      font: .7rem var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+
+    h1 {
+      max-width: 900px;
+      margin: 16px 0 20px;
+      font: 700 clamp(3rem, 6.5vw, 5.4rem)/.94 var(--marker);
+      letter-spacing: -.055em;
+    }
+
+    .lede {
+      max-width: 760px;
+      margin: 0 0 12px;
+      color: var(--ink-soft);
+      font-size: clamp(1.2rem, 2vw, 1.5rem);
+      line-height: 1.4;
+    }
+
+    .byline {
+      margin: 0;
+      color: var(--ink-soft);
+      font: .68rem var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    section { border-top: 3px solid var(--ink); margin-top: clamp(44px, 6vw, 72px); }
+
+    section.intro { border-top: 0; margin-top: 0; }
+
+    h2 {
+      margin: 26px 0 14px;
+      font: 700 clamp(1.7rem, 3vw, 2.5rem)/1.05 var(--marker);
+      letter-spacing: -.035em;
+    }
+
+    h3 {
+      margin: 26px 0 8px;
+      font: 700 1.35rem/1.2 var(--marker);
+      letter-spacing: -.02em;
+    }
+
+    p { max-width: 760px; }
+
+    .note-card {
+      position: relative;
+      max-width: 760px;
+      margin: 26px 0;
+      padding: 20px 24px;
+      border: 2px solid var(--ink);
+      border-radius: var(--wobble);
+      background: var(--yellow);
+      box-shadow: 4px 4px 0 var(--ink);
+      transform: rotate(-.6deg);
+    }
+
+    .note-card p { margin: 0; }
+
+    figure { margin: 28px 0; }
+
+    video, .still {
+      display: block;
+      width: 100%;
+      max-width: 940px;
+      border: 3px solid var(--ink);
+      border-radius: 4px;
+      box-shadow: 6px 6px 0 var(--ink);
+      background: var(--paper-deep);
+    }
+
+    figcaption {
+      max-width: 760px;
+      margin-top: 14px;
+      color: var(--ink-soft);
+      font-size: 1.05rem;
+    }
+
+    .diagram {
+      display: block;
+      width: 100%;
+      max-width: 940px;
+      height: auto;
+      margin: 24px 0 8px;
+    }
+
+    .diagram text { font-family: var(--mono); fill: var(--ink); }
+    .diagram .box { fill: var(--blue-soft); stroke: var(--ink); stroke-width: 2.5; }
+    .diagram .box-model { fill: var(--yellow); stroke: var(--ink); stroke-width: 2.5; }
+    .diagram .flow { fill: none; stroke: var(--ink); stroke-width: 2.5; }
+    .diagram .flow-back { fill: none; stroke: var(--red); stroke-width: 2.5; stroke-dasharray: 7 6; }
+    .diagram .label { font-size: 15px; }
+    .diagram .sub { font-size: 12px; fill: var(--ink-soft); }
+
+    pre {
+      max-width: 940px;
+      margin: 20px 0;
+      padding: 18px 20px;
+      overflow-x: auto;
+      border: 2px solid var(--ink);
+      border-radius: 4px;
+      background: var(--paper-deep);
+      box-shadow: 4px 4px 0 rgba(45, 45, 45, .18);
+      font: 13px/1.6 var(--mono);
+    }
+
+    code { font-family: var(--mono); font-size: .82em; }
+
+    table {
+      width: 100%;
+      max-width: 760px;
+      margin: 22px 0;
+      border-collapse: collapse;
+      font-size: 1.05rem;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px dashed rgba(45, 45, 45, .4);
+      text-align: left;
+    }
+
+    th {
+      color: var(--ink-soft);
+      font: .68rem var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    td.num { font-family: var(--mono); font-size: .95rem; }
+
+    ul { max-width: 760px; padding-left: 22px; }
+    li { margin-bottom: 8px; }
+
+    .site-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 100px;
+      gap: 24px;
+      border-top: 3px solid var(--ink);
+      color: var(--ink-soft);
+    }
+
+    .site-footer p { margin: 0; }
+    .site-footer .rule { font: .66rem var(--mono); text-transform: uppercase; letter-spacing: .05em; }
+
+    .replay {
+      max-width: 940px;
+      margin: 26px 0 8px;
+      padding: 18px 20px 20px;
+      border: 3px solid var(--ink);
+      border-radius: 4px;
+      background: var(--paper-deep);
+      box-shadow: 6px 6px 0 var(--ink);
+    }
+
+    .replay-runs {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .run-pick {
+      padding: 6px 12px;
+      border: 2px solid var(--ink);
+      border-radius: 3px;
+      background: var(--paper);
+      color: var(--ink);
+      font: .72rem var(--mono);
+      cursor: pointer;
+    }
+
+    .run-pick.is-on { background: var(--yellow); box-shadow: 2px 2px 0 var(--ink); }
+    .run-pick:hover { border-color: var(--red-deep); }
+
+    .replay-summary {
+      margin-left: auto;
+      color: var(--ink-soft);
+      font: .68rem var(--mono);
+    }
+
+    .replay-body {
+      display: grid;
+      grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    #replay-canvas {
+      display: block;
+      width: 100%;
+      border: 2px solid var(--ink);
+      background: #1d1d1d;
+      image-rendering: pixelated;
+    }
+
+    .replay-vitals,
+    .replay-effect,
+    .replay-head,
+    .replay-ach {
+      margin: 10px 0 0;
+      color: var(--ink-soft);
+      font: .72rem/1.5 var(--mono);
+    }
+
+    .replay-head { color: var(--ink); font-size: .78rem; margin-top: 0; }
+    .replay-effect { color: var(--ink); }
+
+    .replay-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    #replay-play {
+      min-width: 62px;
+      padding: 5px 10px;
+      border: 2px solid var(--ink);
+      border-radius: 3px;
+      background: var(--paper);
+      font: .72rem var(--mono);
+      cursor: pointer;
+    }
+
+    #replay-slider { flex: 1; min-width: 0; accent-color: var(--red-deep); }
+
+    .replay-step { min-width: 62px; color: var(--ink-soft); font: .7rem var(--mono); text-align: right; }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 116px minmax(0, 1fr) 40px;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+      font: .7rem var(--mono);
+    }
+
+    .bar-name { color: var(--ink-soft); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-row.is-pick .bar-name { color: var(--ink); }
+    .bar-row.is-blocked .bar-name { color: var(--ink-soft); text-decoration: line-through; }
+
+    .bar-track { display: block; height: 13px; border: 1px solid var(--ink); background: var(--paper); }
+    .bar-fill { display: block; height: 100%; background: var(--blue-soft); }
+    .bar-row.is-pick .bar-fill { background: var(--red); }
+    .bar-value { color: var(--ink-soft); }
+
+    .replay-signals {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed rgba(45, 45, 45, .4);
+      font: .7rem/1.7 var(--mono);
+      color: var(--ink-soft);
+    }
+
+    .replay-signals b { color: var(--ink); font-weight: 400; }
+
+    .replay-memory {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(45, 45, 45, .4);
+      font: .68rem/1.6 var(--mono);
+      color: var(--ink-soft);
+    }
+
+    .replay-memory .mem-head { color: var(--ink); }
+    .replay-memory ol { margin: 4px 0 0; padding-left: 20px; }
+    .replay-memory li.is-new { color: var(--red-deep); }
+
+    @media (max-width: 720px) {
+      .replay { padding: 14px; }
+      .replay-body { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 96px minmax(0, 1fr) 36px; }
+      .replay-summary { margin-left: 0; }
+    }
+
+    @media (max-width: 720px) {
+      html, body { overflow-x: hidden; }
+      .shell { width: auto; max-width: none; margin-inline: 16px; }
+      body { font-size: 18px; }
+      h1 { font-size: clamp(2.6rem, 13vw, 3.4rem); }
+      pre { font-size: 11.5px; }
+      .site-footer { flex-direction: column; align-items: flex-start; justify-content: center; padding: 24px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header shell">
+    <a class="brand" href="/" aria-label="tanh.xyz home">tanh.xyz</a>
+    <a class="back-link" href="/research-notes/">← Research notes</a>
+  </header>
+
+  <main class="shell">
+    <section class="intro">
+      <p class="eyebrow">Research note 03 · Structured decisions</p>
+      <h1>Jev plays Craftax.</h1>
+      <p class="lede">One typed question per tick, 210 ticks, five achievements, and a very specific way to die: facing a sapling, pressing the same button 128 times, with water five tiles away and the model's own priority answer reading <em>drink</em>. Telling it that the button did nothing does not help. Taking the button away triples the score.</p>
+      <p class="byline">Runs of 18 September 2026 · jev-1.13.0 · Craftax-Classic-Symbolic-v1 · seeds 0, 1, 2</p>
+    </section>
+
+    <section>
+      <h2>What is plugged into what</h2>
+      <p><a href="https://docs.typesafe.ai/introduction">TypeSafe</a> serves a model called Jev that does not generate text. You send a state and a set of typed questions, and you get typed answers back: a <code>Choice</code> returns one option plus a probability for every option and a confidence, a <code>Score</code> returns a level on a scale you define, a <code>Noul</code> returns the probability that a statement is true. Every question in a request is <a href="https://docs.typesafe.ai/patterns/fan-out">evaluated in parallel</a>, so asking twelve costs about what asking one costs.</p>
+      <p><a href="https://github.com/MichaelTMatthews/Craftax">Craftax</a> is a survival-crafting environment written entirely in JAX — a reimplementation and extension of Crafter. Its classic variant has 17 actions, 22 achievements, and a 7×9 view around the player. It normally runs at hundreds of thousands of steps per second, which is the point of it: it exists so reinforcement learning agents can burn a billion steps overnight.</p>
+      <p>This demo throws that away on purpose. There is no training here, only inference, so a network round trip per step costs nothing but wall-clock time. One call per tick, one <code>Choice</code> over the 17 actions, and whatever comes back gets pressed. No planner, no pathfinding, no masking of actions whose requirements are not met.</p>
+      <div class="note-card">
+        <p><strong>The naive setting is the experiment.</strong> The question is not whether a typed decision model can be wired to a game loop — it can, in about 400 lines. The question is what breaks when a typed Choice is asked to <em>be</em> the policy instead of informing one.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>The run</h2>
+      <figure>
+      <div class="replay" id="replay">
+        <div class="replay-runs" role="group" aria-label="Choose a run">
+          <button type="button" class="run-pick is-on" data-run="naive">naive</button>
+          <button type="button" class="run-pick" data-run="suppress">dead options removed</button>
+          <button type="button" class="run-pick" data-run="pure">raw state + history</button>
+          <button type="button" class="run-pick" data-run="memory">raw + history + memory</button>
+          <button type="button" class="run-pick" data-run="strict">no priors at all</button>
+          <span class="replay-summary" id="replay-summary"></span>
+        </div>
+
+        <div class="replay-body">
+          <div class="replay-left">
+            <canvas id="replay-canvas" width="144" height="112" aria-label="The 7 by 9 view around the player"></canvas>
+            <p class="replay-vitals" id="replay-vitals"></p>
+            <div class="replay-controls">
+              <button type="button" id="replay-play" aria-label="Play or pause">play</button>
+              <input type="range" id="replay-slider" min="0" max="0" value="0" aria-label="Step">
+              <span class="replay-step" id="replay-step">0</span>
+            </div>
+            <p class="replay-effect" id="replay-effect"></p>
+          </div>
+
+          <div class="replay-right">
+            <p class="replay-head" id="replay-head"></p>
+            <div class="replay-bars" id="replay-bars"></div>
+            <div class="replay-signals" id="replay-signals"></div>
+            <div class="replay-memory" id="replay-memory" hidden></div>
+            <p class="replay-ach" id="replay-ach"></p>
+          </div>
+        </div>
+      </div>
+      <figcaption>Every decision in the episode, scrubbable. Left: the 7×9 view the agent was given, drawn from the same block names that went into the request. Right: the action distribution returned by the <code>Choice</code>, with the pick in red, and the five speculative answers that rode along. Arrow keys step through it. The run selector swaps in the later experiments, including the one where the model keeps its own notes. Sprites are Craftax's own, MIT licensed.</figcaption>
+      </figure>
+      <p class="byline">Also as video: <a href="/data/demos/craftax-jev/rollout.mp4">naive run</a> · <a href="/data/demos/craftax-jev/rollout-suppress.mp4">dead options removed</a></p>
+    </section>
+
+    <section>
+      <h2>The loop</h2>
+      <svg class="diagram" viewBox="0 0 940 250" role="img" aria-labelledby="loop-title loop-desc">
+        <title id="loop-title">The per-step control loop</title>
+        <desc id="loop-desc">Craftax state is serialized to JSON, sent to Jev as six questions in one call, and the returned action is pressed, which produces the next state.</desc>
+        <rect class="box" x="12" y="40" width="190" height="86" rx="6"/>
+        <text class="label" x="107" y="76" text-anchor="middle">craftax state</text>
+        <text class="sub" x="107" y="98" text-anchor="middle">jax, 7x9 view</text>
+
+        <rect class="box" x="252" y="40" width="190" height="86" rx="6"/>
+        <text class="label" x="347" y="76" text-anchor="middle">serialize</text>
+        <text class="sub" x="347" y="98" text-anchor="middle">~1750 tokens of json</text>
+
+        <rect class="box-model" x="492" y="40" width="190" height="86" rx="6"/>
+        <text class="label" x="587" y="76" text-anchor="middle">jev, one call</text>
+        <text class="sub" x="587" y="98" text-anchor="middle">6 questions, parallel</text>
+
+        <rect class="box" x="732" y="40" width="196" height="86" rx="6"/>
+        <text class="label" x="830" y="76" text-anchor="middle">press the choice</text>
+        <text class="sub" x="830" y="98" text-anchor="middle">env.step, one action</text>
+
+        <path class="flow" d="M202 83 L246 83"/>
+        <path class="flow" d="M202 83 L238 83 M238 76 L250 83 L238 90"/>
+        <path class="flow" d="M442 83 L478 83 M478 76 L490 83 L478 90"/>
+        <path class="flow" d="M682 83 L718 83 M718 76 L730 83 L718 90"/>
+        <path class="flow-back" d="M830 126 L830 186 L107 186 L107 132"/>
+        <path class="flow" d="M100 140 L107 128 L114 140"/>
+        <text class="sub" x="468" y="208" text-anchor="middle">next state, 0.32 s later</text>
+      </svg>
+      <p>The serializer is the only real work. Jev takes text — string, object, or array, <a href="https://docs.typesafe.ai/concepts/state">no images</a> — so the symbolic environment state becomes a JSON object with named fields: the local view as block names, the tile in front, vitals, inventory, bearings to anything interesting, and which achievements are still outstanding. This is step 180, trimmed:</p>
+      <pre>{
+  "view": {
+    "note": "7 rows by 9 columns, you are at the centre; rows run top to bottom",
+    "grid": [
+      "water stone stone grass stone stone path  stone stone",
+      "water path  tree  grass tree  stone path  stone stone",
+      "water grass grass grass plant grass tree  tree  grass",
+      "grass grass grass grass you   tree  grass grass tree",
+      "grass grass grass grass grass crafting_table grass grass grass",
+      "grass grass grass grass grass grass grass grass grass",
+      "grass tree  tree  tree  grass grass grass zombie grass"
+    ]
+  },
+  "facing": { "direction": "up", "tile_in_front": "plant" },
+  "nearest": {
+    "water": "1 up, 4 left (5 tiles)",
+    "crafting_table": "1 down, 1 right (2 tiles)",
+    "zombie": "3 down, 3 right (6 tiles)"
+  },
+  "vitals": { "health": 9, "food": 3, "drink": 1, "energy": 4, "max_for_each": 9 },
+  "inventory": { "wood": 1, "sapling": 1, "wood_pickaxe": 1 },
+  "world": { "time_of_day": "night", "timestep": 180 }
+}</pre>
+      <p>The policy is one question. Each option carries its own preconditions, so the model is not asked to remember Minecraft:</p>
+      <pre>"action": Choice(
+    instructions=(
+        "You are the player in a survival crafting game. Pick the single action "
+        "to take this tick. Stay alive, keep food, drink and energy up, and work "
+        "towards the achievements still listed as remaining. An action whose "
+        "requirements are not met does nothing, so only pick one you can do now."
+    ),
+    criteria={
+        "DO": "Use the tile you are facing: chop a tree for wood, mine stone or coal "
+              "(needs a wood pickaxe), ... drink from water, eat a cow or a ripe plant ...",
+        "MAKE_STONE_PICKAXE": "Craft a stone pickaxe. Needs 1 wood, 1 stone and a "
+                              "crafting table in reach.",
+        ...
+    },
+)</pre>
+      <p>Five more questions ride along for free: a priority <code>Choice</code>, a danger <code>Score</code>, and three <code>Noul</code>s. They change nothing — they are read only by the video. Keep that in mind for the next section.</p>
+    </section>
+
+    <section>
+      <h2>What it cost</h2>
+      <table>
+        <thead>
+          <tr><th>Measure</th><th>Naive run</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Steps before death</td><td class="num">210</td></tr>
+          <tr><td>Achievements</td><td class="num">5 / 22</td></tr>
+          <tr><td>Return</td><td class="num">4.1</td></tr>
+          <tr><td>Wall clock</td><td class="num">90.5 s (2.3 steps/s, render included)</td></tr>
+          <tr><td>Call latency, median / p95</td><td class="num">0.32 s / 0.79 s</td></tr>
+          <tr><td>Input tokens per step</td><td class="num">1,746</td></tr>
+          <tr><td>Total cost</td><td class="num">$0.015</td></tr>
+          <tr><td>Mean confidence on the action</td><td class="num">0.34</td></tr>
+        </tbody>
+      </table>
+      <p>The achievements were real and arrived early: wood at step 2, a crafting table at step 5, a wood pickaxe at 68, a sapling at 81, a planted sapling at 82. That is a competent opening. At a cent and a half per episode and a third of a second per decision, cost and latency are simply not the constraint — which is what makes the failure interesting rather than excusable.</p>
+    </section>
+
+    <section>
+      <h2>Then it stopped</h2>
+      <figure>
+        <img class="still" src="/data/demos/craftax-jev/step-180.png" alt="Step 180: the action distribution puts 0.43 on DO while the priority question answers drink with confidence 0.86, drink level 1, water visible at the top left.">
+        <figcaption>Step 180. Drink is at 1 of 9. Water is four tiles left and one up, visible in the view. The priority question answers <em>drink</em> at confidence 0.86. The action stays <code>do</code>, aimed at the sapling.</figcaption>
+      </figure>
+      <p>From step 82 — the tick after it planted the sapling — the agent faced that plant and pressed <code>do</code> for 128 consecutive steps, waiting for a plant that ripens on a timer it cannot see. <strong>203 of the 210 actions in the episode were <code>do</code>.</strong> It died of thirst at step 209 with drink at zero, food at one, and health at one.</p>
+      <p>The striking part is not that it got stuck. It is that the rest of the response knew:</p>
+      <ul>
+        <li>For 81 steps the priority question answered <code>drink</code>, mean confidence 0.61, rising to 0.86 by step 180.</li>
+        <li>Water was in the serialized view on every one of those 81 steps, and its bearing was in the state as plain text.</li>
+        <li>On all 81 of them the action question returned <code>do</code>, facing a plant.</li>
+        <li>It never once drank. <code>collect_drink</code> is the one early achievement it missed.</li>
+      </ul>
+      <p>So the model was not wrong about the situation. It was wrong about the <em>action</em> — because "walk four tiles left and one up, then press do" is not something a single categorical choice over one-tile moves can express. Each individual step toward the water is locally worthless; only the sequence pays. A per-tick argmax over primitive actions has no way to price a plan, and the state carries no record of how long the current attempt has been failing.</p>
+    </section>
+
+    <section>
+      <h2>Telling it what happened</h2>
+      <p>The obvious repair is to close the loop: if <code>do</code> did nothing, say so, and it should stop pressing <code>do</code>. My first attempt at that appeared to refute the idea — same seed, last eight actions in the state, each tagged when nothing changed, and the result was <em>worse</em>: 2 achievements instead of 5, and 99% of actions still <code>do</code>.</p>
+      <p>That attempt was measuring the wrong thing. The tag compared whole states, so hunger ticking down, the light level falling and a zombie stepping sideways all counted as "something changed". During the stretch where every single <code>do</code> was useless, the tag fired on <strong>53%</strong> of steps. The model was being told, in effect, that <code>do</code> works about half the time — and behaved accordingly.</p>
+      <p>The correct signal is the effect of the <em>action</em>, not the change in the <em>world</em>: an inventory delta, a changed block, damage to a mob, a move, a turn, a new achievement. Nothing else counts. That gives an exact phrase per transition, and a tally keyed by tile, facing and the block in front, so a recorded failure only applies while the situation is genuinely identical.</p>
+      <pre>"feedback": {
+  "note": "what your last actions actually did. 'nothing happened' means the
+           action was wasted, so do not repeat it here",
+  "recent": [
+    "do -&gt; nothing happened",
+    "right -&gt; only turned to face right",
+    "do -&gt; wood +1"
+  ],
+  "wasted_from_this_exact_spot": { "do": 12 }
+}</pre>
+      <p>With an honest signal, two things can be tested separately: <em>telling</em> the model an action was wasted, and <em>removing</em> that action from the options after it has done nothing three times in the same situation. The second is still raw action control — no goals, no pathfinding — it just stops offering a menu item that is provably inert. Three seeds each, 400-step cap:</p>
+      <table>
+        <thead>
+          <tr><th>Setting</th><th>Achievements (s0, s1, s2)</th><th>Mean</th><th>Return</th><th><code>do</code> share</th><th>Moves</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Raw, no feedback</td><td class="num">5, 2, 2</td><td class="num">3.0</td><td class="num">2.1</td><td class="num">94%</td><td class="num">6</td></tr>
+          <tr><td>+ exact feedback</td><td class="num">4, 2, 2</td><td class="num">2.7</td><td class="num">1.8</td><td class="num">80%</td><td class="num">33</td></tr>
+          <tr><td>+ feedback, option removed after 3 failures</td><td class="num">11, 6, 6</td><td class="num">7.7</td><td class="num">6.8</td><td class="num">28%</td><td class="num">137</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Being told does not work. Being stopped does.</strong> Accurate feedback alone loosens the lock-in — repetition falls from 94% to 80% and the agent moves five times as much — but it converts repetition into wandering, and the achievement count does not improve. Reading "do &rarr; nothing happened" eight times in a row and then choosing <code>do</code> again is, apparently, well within reach.</p>
+      <p>Deleting the option changes the episode. Return triples, and six achievements appear that neither of the other settings ever reached on any seed: <em>collect drink, eat cow, defeat zombie, collect stone, place stone, collect coal</em>. Every one of them requires walking somewhere first. The suppression does not teach the agent to navigate — it just stops the free ride, and a policy that cannot stand still has to go somewhere.</p>
+      <p>Pick <em>dead options removed</em> in the replay above to watch this seed with the rule on: wood at step 2, table at 8, wood pickaxe at 18, a cow eaten at 80, water drunk at 103, a zombie killed at 118, stone at 177, coal at 193. It still dies at step 197 — but at full drink and mid food, to a mob rather than to thirst. Removed options are struck through in the bar list on the ticks where the rule fired.</p>
+      <div class="note-card">
+        <p><strong>This is not sound, and that is fine.</strong> Craftax changes on its own: the sapling that is inert now ripens later. Suppression after three identical failures, cleared whenever the block in front changes, is a heuristic that trades a small amount of correctness for not dying of thirst beside a pond. A note worth keeping for anything that gates a model's options this way.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Whose knowledge is it</h2>
+      <p>Everything above runs on a state I engineered. The bearings list is the set of things <em>I</em> decided were worth pointing at. <code>workstations_in_reach</code> encodes Craftax's adjacency rule. The tile in front is resolved before the model sees it. The remaining achievements are handed over as a to-do list. And the action options spell out the whole tech tree — one wood and a table makes a pickaxe, iron needs a furnace. A fair question is how much of the behaviour was ever the model's.</p>
+      <p>So: strip it. The raw state is the observation and the body — the 7×9 grid of block names, which way you face, health, food, drink, energy, what is in the bag, the light level, the achievements you have. No bearings, no reach flags, no resolved tile, no to-do list. Each action gets one neutral sentence about what the button does and nothing about when to press it: <code>"DO": "Interact with the tile you are facing."</code>, <code>"MAKE_IRON_PICKAXE": "Craft an iron pickaxe."</code> No recipes, no requirements, no advice.</p>
+      <p>Then the missing context comes back as observation rather than instruction: the last sixteen transitions, each as what was pressed and what it did, plus the count of what has already been wasted from this exact spot. That is history, not game knowledge — it is derived from watching, and the model is still the one deciding.</p>
+      <table>
+        <thead>
+          <tr><th>Setting</th><th>Achievements (s0, s1, s2)</th><th>Mean</th><th>Return</th><th><code>do</code> share</th><th>Tokens/step</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Engineered state, tech tree in the options</td><td class="num">5, 2, 2</td><td class="num">3.0</td><td class="num">2.1</td><td class="num">94%</td><td class="num">1,751</td></tr>
+          <tr><td>Engineered + dead options removed</td><td class="num">11, 6, 6</td><td class="num">7.7</td><td class="num">6.8</td><td class="num">28%</td><td class="num">1,836</td></tr>
+          <tr><td>Raw state, minimal options</td><td class="num">1, 0, 2</td><td class="num">1.0</td><td class="num">0.1</td><td class="num">29%</td><td class="num">1,170</td></tr>
+          <tr><td>Raw + 16-step transition history</td><td class="num">4, 3, 5</td><td class="num">4.0</td><td class="num">3.1</td><td class="num">50%</td><td class="num">1,353</td></tr>
+          <tr><td>Raw + history + dead options removed</td><td class="num">5, 2, 7</td><td class="num">4.7</td><td class="num">3.8</td><td class="num">34%</td><td class="num">1,351</td></tr>
+        </tbody>
+      </table>
+      <p>Take the priors away with nothing in their place and it collapses: 3.0 achievements down to 1.0, and a return of essentially zero. The hand-written context was carrying the run.</p>
+      <p>Give it history instead and it comes back <em>past</em> where it started — 4.0 against 3.0 — with no Craftax rule anywhere in the request, and on 23% fewer tokens per step. Sixteen lines of "I pressed this, that happened" are worth more than my curated bearings and my to-do list. That is the result I did not expect.</p>
+      <p>But look at <em>which</em> achievements. Across all three seeds, no raw agent ever placed a crafting table or made a pickaxe. What they did instead was drink, fight a zombie, kill a skeleton, plant a sapling. The raw agents survive; they never craft. Crafting is the one part of Craftax that cannot be induced from looking at the tiles — the recipes are arbitrary and invisible — so it is exactly the part that disappears with the tech tree. The priors were not buying general competence. They were buying the recipes, and nothing else.</p>
+      <div class="note-card">
+        <p><strong>How much to read into this:</strong> three seeds per arm, one model version, a 400-step cap. A one-achievement gap is noise. The 1.0 / 4.0 / 7.7 spread is not, and the crafting split is categorical — zero occurrences across three raw seeds against every engineered seed.</p>
+      </div>
+      <p>The best arm is still the engineered one with dead options removed, at 7.7. Purity costs about a third of the score. What it buys is knowing that the number belongs to the model rather than to my prompt.</p>
+    </section>
+
+    <section>
+      <h2>Letting it keep notes</h2>
+      <p>Sixteen steps of history is an arbitrary window, and a sliding window forgets by construction. So: give the model a memory and let it decide what goes in. One more <code>Noul</code> rides in the same call — <em>the transition in <code>last_transition</code> is worth writing into long-term memory; ordinary movement that taught nothing is not</em> — and code does only the bookkeeping. Identical entries merge into a count, and when the store is full the lowest-scored entry is dropped. The threshold is 0.5, the midpoint of a probability, rather than a number I tuned.</p>
+      <p>The curation works. It writes on about 14% of ticks, and what survives is exactly what you would want a player to have learned:</p>
+      <pre>facing tree:  do -> wood +1          (happened 4 times)
+facing grass: do -> sapling +1       (happened 7 times)
+facing cow:   do -> unlocked an achievement
+facing grass: do -> nothing happened (happened 5 times)</pre>
+      <p>That is the mechanics of the game, discovered by pressing buttons rather than read from a recipe list. It is the most convincing artefact in this whole note. It also does not help — and before the table, it is worth being straight about how much of that store is really the model's.</p>
+      <div class="note-card">
+        <p><strong>Two priors smuggled back in.</strong> Each entry is written as <code>facing &lt;tile&gt;: &lt;action&gt; -&gt; &lt;effect&gt;</code>. The facing tile is computed in code from the direction offsets — the Craftax rule that your heading selects the tile your actions act on. I deleted that from the raw state as engineered context and then put it back inside every remembered line, and it is exactly what makes <code>facing tree: do -&gt; wood +1</code> generalise to every tree in the world. The effect phrase is mine too: a hand-written list of which variables count as action-caused, which is what separates a real effect from hunger ticking down. Both run through the failure tally as well, so the suppression rule inherits them. What is genuinely the model's is which transitions are worth keeping — not the vocabulary they are written in.</p>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Setting</th><th>Achievements per seed</th><th>Mean</th><th>SD</th><th>Return</th><th>Tokens/step</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Raw + 16-step window (5 seeds)</td><td class="num">4, 3, 5, 3, 6</td><td class="num">4.2</td><td class="num">1.3</td><td class="num">3.3</td><td class="num">1,353</td></tr>
+          <tr><td>+ memory, 24 entries (3 seeds)</td><td class="num">3, 3, 2</td><td class="num">2.7</td><td class="num">0.6</td><td class="num">1.8</td><td class="num">1,543</td></tr>
+          <tr><td>+ memory, 4-step window (3 seeds)</td><td class="num">3, 3, 3</td><td class="num">3.0</td><td class="num">0.0</td><td class="num">2.1</td><td class="num">1,439</td></tr>
+          <tr><td>+ memory + a sense of place (5 seeds)</td><td class="num">2, 2, 3, 4, 4</td><td class="num">3.0</td><td class="num">1.0</td><td class="num">2.1</td><td class="num">1,612</td></tr>
+        </tbody>
+      </table>
+      <p>No variant beats the plain window, and with standard deviations above 1 achievement none of the gaps is individually significant either. What is clear is that adding memory did not buy anything, and cost 14% more tokens per step to do it.</p>
+      <p>The reason is visible in the store. Deduplication collapses it to six or seven distinct entries, and every one of them is a <em>rule</em> — what a button does to a kind of tile. Rules are precisely what the last sixteen steps already show, so the memory is mostly a slower copy of the window. What a window genuinely cannot hold is a <em>place</em>: the pond you passed forty steps ago.</p>
+      <p>So I gave the raw state a sense of place — absolute x, y on the 48×48 world — and let memory entries carry coordinates. That went worse, and instructively. Every entry became unique, so nothing merged, and the store filled with one-offs that will never recur:</p>
+      <pre>at (32,29) facing grass: down -> hit a mob
+at (32,43) facing grass: up   -> hit a mob
+at (32,50) facing water: do   -> hit a mob (happened 6 times)
+at (32,28) facing stone: down -> hit a mob</pre>
+      <p>Coordinates destroyed the generalisation that made the first store useful. A memory of "do on a tree gives wood" transfers to every tree in the world; a memory of "at (32,29) something hit me" transfers to nothing, and it crowds out the rule it displaced.</p>
+      <div class="note-card">
+        <p><strong>What this says:</strong> the bottleneck was never how much the agent remembers. It forgets nothing important inside sixteen steps. Every intervention that gave it more to know — exact feedback, a curated memory, coordinates — moved the score by less than the seed noise. The one intervention that moved it by a factor of two was the one that took an action away. Knowing and doing are separate problems here, and only the second one was ever binding.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Closing the leaks</h2>
+      <p>So I closed both. The effect phrase is now a diff of the observation the model already receives, with no opinion about what caused it — <code>view r2c4 tree-&gt;grass, wood 0-&gt;1</code> rather than <code>wood +1</code>. The situation key is the visible surroundings and the heading, with no notion of a tile in front. Nothing in the feedback names a Craftax rule any more.</p>
+      <table>
+        <thead>
+          <tr><th>Setting</th><th>Achievements per seed</th><th>Mean</th><th>SD</th><th>Return</th><th>Tokens/step</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>16-step window, with the two priors</td><td class="num">4, 3, 5, 3, 6</td><td class="num">4.2</td><td class="num">1.3</td><td class="num">3.3</td><td class="num">1,353</td></tr>
+          <tr><td>+ memory, with the two priors (3 seeds)</td><td class="num">3, 3, 2</td><td class="num">2.7</td><td class="num">0.6</td><td class="num">1.8</td><td class="num">1,543</td></tr>
+          <tr><td>16-step window, priors removed</td><td class="num">0, 2, 3, 1, 3</td><td class="num">1.8</td><td class="num">1.3</td><td class="num">0.9</td><td class="num">1,482</td></tr>
+          <tr><td>+ memory, priors removed</td><td class="num">2, 3, 2, 3, 3</td><td class="num">2.6</td><td class="num">0.5</td><td class="num">1.7</td><td class="num">1,691</td></tr>
+        </tbody>
+      </table>
+      <p>Purity is expensive: 4.2 down to 1.8, more than half the score, for two pieces of phrasing. And the mechanism is legible in the transitions. Without a rule about what an action is able to cause, the diff cannot separate the action from the clock:</p>
+      <pre>do -> nothing you can see changed
+do -> nothing you can see changed
+do -> energy 8->7
+do -> drink 7->6</pre>
+      <p>Those last two read as though pressing <code>do</code> drained the player. It did not; time did. The curated vocabulary was not decoration — deciding which variables an action can move is the content of the signal, and it is the same distinction whose absence produced the 53% mislabelling at the start of this note.</p>
+      <p>Then the reversal. Memory <em>hurt</em> when the feedback carried my priors (4.2 → 2.7) and <em>helped</em> once they were gone (1.8 → 2.6). It was redundant with the engineered vocabulary and substitutes for it: a store that re-derives the rules is worth something only when the rules are not already being handed over on every line.</p>
+      <p>And it does re-derive them. Here is what the prior-free agent wrote down for itself:</p>
+      <pre>do -> view r2c4 tree->grass, wood 0->1, achievement collect_wood
+do -> view r5c5 skeleton->path, view r6c5 path->skeleton
+do -> view r6c5 skeleton->path, health 9->7</pre>
+      <p>Cell <code>r2c4</code> is one row above the centre, which is where the player stands. The model has written down, in raw view coordinates, the rule I deleted: the cell in front of you is the one that changes, and when it was a tree you end up holding wood. It recovered the prior from observation — it just does not recover enough of it, fast enough, to pay for what removing it cost.</p>
+      <p>Which raises the obvious question: why a window at all? A transition line is about fifty characters, so recording <em>every</em> state change since the episode began costs a few thousand tokens even at step 400 — trivially affordable. Consecutive identical lines collapse to <code>(x12 in a row)</code>, so a stuck stretch stays cheap. I ran it: complete recall, nothing thrown away.</p>
+      <table>
+        <thead>
+          <tr><th>What the prior-free agent is given</th><th>Achievements per seed (5)</th><th>Mean</th><th>Tokens/step</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Every state change since it woke up</td><td class="num">0, 0, 2, 2, 2</td><td class="num">1.2</td><td class="num">1,201 → 4,764</td></tr>
+          <tr><td>The last 16 changes</td><td class="num">0, 2, 3, 1, 3</td><td class="num">1.8</td><td class="num">1,482</td></tr>
+          <tr><td>The last 16, plus what it chose to keep</td><td class="num">2, 3, 2, 3, 3</td><td class="num">2.6</td><td class="num">1,691</td></tr>
+        </tbody>
+      </table>
+      <p>Complete recall is the worst of the three. Hundreds of near-identical movement lines bury the handful that matter, and the agent wanders longer — 231 steps on average — while achieving less. Truncation beats completeness, and selection beats truncation: the ordering is exactly the argument for letting the model curate, which is the one thing the memory experiment had failed to demonstrate while the engineered vocabulary was still propping the window up.</p>
+
+      <p>The other axis is resolution. Each transition above is a digest: the effect line lists changed cells only up to a handful, then summarises the rest as <code>view changed in 25 places</code>. Worse, the engineered version reported the <em>first</em> thing it found and dropped the rest, so <code>do -&gt; wood +1</code> silently hid that the tile in front had turned from tree to grass. Recording every change instead — every cell, every vital, every item, in one line per step — costs 24% more tokens and scores 2.2 against 2.6, which is inside the noise.</p>
+      <p>The reason completeness buys so little is an artefact of the view being egocentric. One step of walking rewrites roughly thirty cells, because the window scrolled, not because the world moved. A complete diff cannot tell those apart, so most of what it adds is the agent's own motion. The informative part of a transition — the single cell in front that turned from tree to grass — arrives buried in thirty lines of parallax. What the memory kept is the tell:</p>
+      <pre>do -> view r4c4 tree->grass, wood 0->1, achievement collect_wood
+do -> view r4c4 tree->grass, wood 1->2
+do -> drink 8->9, achievement collect_drink</pre>
+      <p>Every entry it chose to keep is a transition where the diff was <em>small</em>. The complete diffs of movement, thirty cells wide, were never worth remembering, and the model never kept one.</p>
+
+      <div class="note-card">
+        <p><strong>Where that leaves the number.</strong> The honest prior-free score is 2.6 achievements out of 22, against 4.2 with two phrases of Craftax knowledge and 7.7 for the engineered state with dead options removed. Everything above the 2.6 is mine, not the model's. That is the figure I would quote.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>What I would build instead</h2>
+      <p>Removing dead options is a patch on the symptom, and it works well enough to triple the return. The underlying shape of the problem is unchanged: the diagnostic questions were reliable while the action question was not, and the API's own documentation points at the arrangement that would exploit that. TypeSafe's line is to <a href="https://docs.typesafe.ai/concepts/how-to-build-with-system-one">keep code in control and give the model narrow, structured decisions</a>. Both the original failure and the size of the repair landed where the docs say they will.</p>
+      <p>The version I would ship keeps the same single call and changes what is asked of it:</p>
+      <ul>
+        <li><strong>Choice picks a subgoal, not a keystroke</strong> — <em>drink</em>, <em>gather wood</em>, <em>flee</em>, <em>craft a stone pickaxe</em>. That is one decision per goal, not one per tile of walking.</li>
+        <li><strong>Code does the locomotion.</strong> A breadth-first search to the nearest matching tile turns "drink" into a concrete sequence of moves, and the Craftax tech tree is a deterministic precondition check, not a judgment call.</li>
+        <li><strong>Replan on events</strong> — goal achieved, goal invalidated, damage taken. That is roughly one call every 10–30 ticks, not 210 calls for 210 ticks.</li>
+        <li><strong>Gate on <a href="https://docs.typesafe.ai/confidence">confidence</a>.</strong> A mean of 0.34 on the action question was the model reporting, correctly, that it did not have a clear read. Nothing in this demo listened to it.</li>
+      </ul>
+      <p>None of that is a workaround for a missing feature. It is the difference between asking a decision model to choose and asking it to drive.</p>
+    </section>
+
+    <section>
+      <h2>Reproduce</h2>
+      <p>The agent is four files in <code>scripts/craftax_jev/</code>: the serializer, the question set, the loop, and the video compositor. It reads <code>JEV_API_KEY</code> from the untracked <code>.env</code> at the repo root.</p>
+      <pre>uv venv --python 3.12 .venv
+uv pip install --python .venv/bin/python craftax typesafe-sdk imageio matplotlib
+
+.venv/bin/python agent.py --steps 600 --seed 0 --out runs/run-01
+.venv/bin/python make_video.py runs/run-01 --fps 6</pre>
+      <p>Add <code>--history 8</code> for the second variant. Every run writes <code>decisions.jsonl</code> with the full request state and response body for each step, which is what both the video and every number above are drawn from.</p>
+    </section>
+
+    <section>
+      <h2>Sources</h2>
+      <ul>
+        <li><a href="https://docs.typesafe.ai/introduction">TypeSafe System One documentation</a> — primitives, state, confidence, fan-out. Pricing and rate limits as published on the <a href="https://docs.typesafe.ai/models">models page</a>.</li>
+        <li><a href="https://github.com/MichaelTMatthews/Craftax">Craftax</a> (Matthews et al., <a href="https://arxiv.org/abs/2402.16801">arXiv:2402.16801</a>), MIT licensed. Craftax-Classic reimplements <a href="https://github.com/danijar/crafter">Crafter</a>.</li>
+        <li>Numbers in this note come from two runs on seed 0 and are reported as observed. One episode each — no averaging over seeds, and no claim about how this model would score on the Craftax benchmark, which measures sample-efficient learning rather than zero-shot play.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer shell">
+    <p>Research notes from tanh.xyz.</p>
+    <p class="rule">Interactive HTML</p>
+  </footer>
+  <script>
+    (function () {
+      var BASE = "/data/demos/craftax-jev/";
+      var TOP = 8;
+      var cache = {};
+      var data = null;
+      var index = 0;
+      var timer = null;
+
+      var canvas = document.getElementById("replay-canvas");
+      var ctx = canvas.getContext("2d");
+      var atlas = new Image();
+      var atlasReady = false;
+      atlas.onload = function () { atlasReady = true; if (data) { render(); } };
+      atlas.src = BASE + "tiles.png";
+
+      var slider = document.getElementById("replay-slider");
+      var playButton = document.getElementById("replay-play");
+      var stepLabel = document.getElementById("replay-step");
+      var vitalsLine = document.getElementById("replay-vitals");
+      var effectLine = document.getElementById("replay-effect");
+      var headLine = document.getElementById("replay-head");
+      var barsBox = document.getElementById("replay-bars");
+      var signalsBox = document.getElementById("replay-signals");
+      var achLine = document.getElementById("replay-ach");
+      var memoryBox = document.getElementById("replay-memory");
+      var summaryLine = document.getElementById("replay-summary");
+
+      function pretty(name) { return name.toLowerCase().replace(/_/g, " "); }
+
+      function drawTile(name, col, row) {
+        var meta = data.meta;
+        var tiles = meta.tiles;
+        var size = meta.tile_size;
+        var slot = tiles.indexOf(name);
+        if (slot < 0) { slot = 0; }
+        ctx.drawImage(atlas, slot * size, 0, size, size, col * size, row * size, size, size);
+      }
+
+      function render() {
+        if (!data || !atlasReady) { return; }
+        var meta = data.meta;
+        var step = data.steps[index];
+        var overlay = meta.overlay;
+
+        for (var cell = 0; cell < step.g.length; cell++) {
+          var name = meta.tiles[step.g[cell]];
+          var col = cell % meta.cols;
+          var row = Math.floor(cell / meta.cols);
+          if (overlay.indexOf(name) >= 0) { drawTile("grass", col, row); }
+          drawTile(name, col, row);
+        }
+
+        var dark = Math.max(0, 1 - step.light) * 0.5;
+        if (dark > 0.01) {
+          ctx.fillStyle = "rgba(10, 14, 30, " + dark.toFixed(2) + ")";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        var chosen = meta.actions[step.a];
+        headLine.textContent = "step " + index + " — jev picks " + pretty(chosen) + " (confidence " + step.c.toFixed(2) + ")";
+        stepLabel.textContent = index + " / " + (data.steps.length - 1);
+        vitalsLine.textContent = "hp " + step.v[0] + "   food " + step.v[1] + "   drink " + step.v[2] + "   energy " + step.v[3] + "   facing " + step.d;
+        effectLine.textContent = step.e ? "result: " + step.e : "";
+
+        var ranked = meta.actions.map(function (name, slot) {
+          return { name: name, value: step.p[slot] / 1000 };
+        }).sort(function (a, b) { return b.value - a.value; }).slice(0, TOP);
+
+        if (step.b) {
+          for (var k = 0; k < step.b.length; k++) {
+            var gone = step.b[k];
+            var listed = ranked.some(function (row) { return row.name === gone; });
+            if (!listed) { ranked.push({ name: gone, value: 0, removed: true }); }
+          }
+        }
+
+        var html = "";
+        for (var i = 0; i < ranked.length; i++) {
+          var row = ranked[i];
+          var classes = "bar-row";
+          if (row.name === chosen) { classes += " is-pick"; }
+          if (row.removed || (step.b && step.b.indexOf(row.name) >= 0)) { classes += " is-blocked"; }
+          html += '<div class="' + classes + '">'
+            + '<span class="bar-name">' + pretty(row.name) + "</span>"
+            + '<span class="bar-track"><span class="bar-fill" style="width:' + (row.value * 100).toFixed(1) + '%"></span></span>'
+            + '<span class="bar-value">' + (row.removed ? "off" : row.value.toFixed(2)) + "</span>"
+            + "</div>";
+        }
+        barsBox.innerHTML = html;
+
+        var inventory = Object.keys(step.inv).map(function (key) {
+          return pretty(key) + " " + step.inv[key];
+        }).join(", ") || "empty";
+
+        signalsBox.innerHTML = "priority <b>" + step.pr[0] + "</b> (conf " + step.pr[1].toFixed(2) + ")<br>"
+          + "danger <b>" + step.dg[0].toFixed(2) + " / 2</b> (conf " + step.dg[1].toFixed(2) + ")<br>"
+          + "facing useful <b>" + step.n[0].toFixed(2) + "</b> · can craft now <b>" + step.n[1].toFixed(2)
+          + "</b> · should explore <b>" + step.n[2].toFixed(2) + "</b><br>"
+          + "bag: <b>" + inventory + "</b>";
+
+        if (data.meta.has_memory) {
+          var kept = step.memAt || [];
+          var items = "";
+          for (var m = 0; m < Math.min(kept.length, 8); m++) {
+            var isNew = step.mn && kept[m] === step.mn;
+            items += '<li' + (isNew ? ' class="is-new"' : "") + ">" + kept[m] + "</li>";
+          }
+          memoryBox.hidden = false;
+          memoryBox.innerHTML = '<span class="mem-head">memory the model kept ('
+            + kept.length + ")</span>" + (items ? "<ol>" + items + "</ol>" : "<br>nothing yet");
+        } else {
+          memoryBox.hidden = true;
+        }
+
+        achLine.textContent = "achievements (" + step.ach.length + "/22): "
+          + (step.ach.map(pretty).join(", ") || "none yet");
+
+        if (slider.value !== String(index)) { slider.value = String(index); }
+      }
+
+      function show(position) {
+        index = Math.max(0, Math.min(data.steps.length - 1, position));
+        render();
+      }
+
+      function stop() {
+        if (timer) { clearInterval(timer); timer = null; }
+        playButton.textContent = "play";
+      }
+
+      function start() {
+        if (timer) { return; }
+        if (index >= data.steps.length - 1) { index = 0; }
+        playButton.textContent = "pause";
+        timer = setInterval(function () {
+          if (index >= data.steps.length - 1) { stop(); return; }
+          show(index + 1);
+        }, 160);
+      }
+
+      function load(run) {
+        stop();
+        if (cache[run]) { apply(cache[run]); return; }
+        summaryLine.textContent = "loading…";
+        fetch(BASE + "replay-" + run + ".json").then(function (response) {
+          if (!response.ok) { throw new Error(response.status); }
+          return response.json();
+        }).then(function (payload) {
+          cache[run] = payload;
+          apply(payload);
+        }).catch(function () {
+          summaryLine.textContent = "could not load this run";
+        });
+      }
+
+      function buildMemory(payload) {
+        var current = [];
+        for (var i = 0; i < payload.steps.length; i++) {
+          if (payload.steps[i].mem) { current = payload.steps[i].mem; }
+          payload.steps[i].memAt = current;
+        }
+      }
+
+      function apply(payload) {
+        data = payload;
+        buildMemory(payload);
+        index = 0;
+        slider.max = String(payload.steps.length - 1);
+        slider.value = "0";
+        var summary = payload.meta.summary || {};
+        summaryLine.textContent = (summary.achievements ? summary.achievements.length : 0)
+          + " achievements · return " + (summary.total_reward || 0)
+          + " · " + payload.steps.length + " steps · seed " + summary.seed;
+        render();
+      }
+
+      slider.addEventListener("input", function () { stop(); show(Number(slider.value)); });
+      playButton.addEventListener("click", function () { if (timer) { stop(); } else { start(); } });
+
+      var picks = document.querySelectorAll(".run-pick");
+      for (var p = 0; p < picks.length; p++) {
+        picks[p].addEventListener("click", function (event) {
+          for (var q = 0; q < picks.length; q++) { picks[q].classList.remove("is-on"); }
+          event.currentTarget.classList.add("is-on");
+          load(event.currentTarget.dataset.run);
+        });
+      }
+
+      document.addEventListener("keydown", function (event) {
+        if (!data) { return; }
+        var tag = document.activeElement ? document.activeElement.tagName : "";
+        if (tag === "INPUT" || tag === "TEXTAREA") { return; }
+        if (event.key === "ArrowRight") { stop(); show(index + 1); event.preventDefault(); }
+        if (event.key === "ArrowLeft") { stop(); show(index - 1); event.preventDefault(); }
+      });
+
+      load("naive");
+    })();
+  </script>
+</body>
+</html>

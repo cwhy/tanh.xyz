@@ -1,0 +1,16 @@
+{
+  "steps": 210,
+  "achievements": [
+    "collect_sapling",
+    "collect_wood",
+    "make_wood_pickaxe",
+    "place_plant",
+    "place_table"
+  ],
+  "total_reward": 4.1,
+  "wall_clock_s": 90.5,
+  "input_tokens": 366837,
+  "cost_usd": 0.0154,
+  "model": "jev-latest",
+  "seed": 0
+}
