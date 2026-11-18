@@ -58,9 +58,12 @@ Icons come from `@lucide/solid`.
 Run `bun run typecheck`, `bun run lint`, `bun run test`, and `bun run build`
 before release. The store regression tests deliberately use Solid's development
 client runtime in Node: the server runtime would hide batched-write bugs.
-Clustering actions flush at the boundary with synchronous algorithms; normal
-UI updates use Solid's default batching. Effects separate tracked inputs from
-DOM work, and lifecycle callbacks return their cleanup functions.
+Clustering actions read and update a single store draft, including parameter
+validation and replay queues, so consecutive actions see staged changes without
+flushing unrelated UI work. Mutable algorithms and GPU buffers stay outside the
+reactive store. MNIST steps share one in-flight operation and discard stale GPU
+results after reset or disposal. Effects separate tracked inputs from DOM work,
+and lifecycle callbacks return their cleanup functions.
 
 For browser validation, exercise generate/step/stream/pause/reset, parameter
 changes, route navigation, and SSR hydration using both `bun run dev` and the

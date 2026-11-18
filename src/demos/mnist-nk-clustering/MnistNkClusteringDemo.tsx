@@ -122,7 +122,7 @@ export function MnistNkClusteringPage(): JSX.Element {
 
 export function MnistNkClusteringDemo(): JSX.Element {
     const store = createMnistNKStore()
-    onSettled(() => () => store.stopStreaming())
+    onSettled(() => store.dispose)
 
     // Image size in pixels (display size, not canvas pixels)
     const imageSize = 28

@@ -3,11 +3,10 @@
  * Manages streaming points and clustering state
  */
 
-import { createSignal, flush, untrack, createStore } from 'solid-js'
+import { createStore } from 'solid-js'
 import {
     createRivalKState,
     addPoint,
-    resetRivalKState,
     getMaturity,
     type RivalKAddPointResult,
     type ClusterMaturity,
@@ -38,40 +37,15 @@ export interface ClusterInfo {
 }
 
 export function createRivalKStore() {
-    // Parameters
-    const [k, setKInternal] = createSignal(3)
-    const [cancelReplay, setCancelReplay] = createSignal(false)
-
-    // These imperative algorithms consume committed UI inputs. Flush at action boundaries
-    // before reading a value changed by an earlier action in the same event.
-    const setK = (newK: number) => {
-        flush()
-        setKInternal(newK)
-        reinitState()
+    const defaults = {
+        k: 3,
+        cancelReplay: false,
     }
-
-    // Clustering state
-    let clusteringState = untrack(() => createRivalKState(k()))
-
-    function reinitState() {
-        flush()
-        clusteringState = createRivalKState(k())
-        setState(s => {
-            s.points = []
-            s.clusters = []
-            s.currentPointIndex = 0
-            s.lastAddedPointId = null
-            s.lastEvictedPointId = null
-            s.replayQueue = []
-            s.nextReplayQueue = []
-            s.replayRound = 0
-            s.replayRoundTotal = 0
-            s.replayRoundProcessed = 0
-        })
-    }
-
-    // Reactive store
+    // The algorithm owns its mutable internals; only configuration and display data are reactive.
+    let clusteringState = createRivalKState(defaults.k)
     const [state, setState] = createStore({
+        ...defaults,
+        streamSpeed: 200,
         points: [] as PointWithCluster[],
         clusters: [] as ClusterInfo[],
         pendingPoints: [] as Array<{ x: number; y: number }>,
@@ -85,16 +59,42 @@ export function createRivalKStore() {
         replayRoundTotal: 0,
         replayRoundProcessed: 0,
     })
-
-    const [streamSpeed, setStreamSpeed] = createSignal(200)
-
+    type State = typeof state
     let streamingInterval: ReturnType<typeof setInterval> | null = null
+
+    function clearTimer() {
+        if (streamingInterval !== null) clearInterval(streamingInterval)
+        streamingInterval = null
+    }
+
+    function restart(s: State) {
+        clusteringState = createRivalKState(s.k)
+        s.points = []
+        s.clusters = []
+        s.currentPointIndex = 0
+        s.isStreaming = false
+        s.lastAddedPointId = null
+        s.lastEvictedPointId = null
+        s.replayQueue = []
+        s.nextReplayQueue = []
+        s.replayRound = 0
+        s.replayRoundTotal = 0
+        s.replayRoundProcessed = 0
+    }
+
+    function configure(update: (draft: State) => void) {
+        clearTimer()
+        setState(s => {
+            update(s)
+            restart(s)
+        })
+    }
 
     function getClusterColor(clusterId: number): OklchColor {
         return getColorForIndex(clusterId, { lightness: 0.65, chroma: 0.18 })
     }
 
-    function syncState() {
+    function syncState(s: State) {
         const pointsWithCluster: PointWithCluster[] = []
 
         for (const cluster of clusteringState.clusters) {
@@ -124,186 +124,115 @@ export function createRivalKStore() {
             color: oklchToCss(getClusterColor(c.id)),
         }))
 
-        setState(s => {
-            s.points = pointsWithCluster
-            s.clusters = clusterInfos
-        })
+        s.points = pointsWithCluster
+        s.clusters = clusterInfos
     }
 
     function generateRandomPoints(count: number, distribution: BasicDatasetDistribution) {
-        flush()
-        stopStreaming()
-        resetRivalKState(clusteringState)
-        clusteringState = createRivalKState(k())
-
         const points = generateBasicDatasetPoints(count, distribution)
-
-        // Shuffle
         for (let i = points.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1))
-                ;[points[i], points[j]] = [points[j], points[i]]
+            ;[points[i], points[j]] = [points[j], points[i]]
         }
-
+        clearTimer()
         setState(s => {
+            restart(s)
             s.pendingPoints = points
-            s.currentPointIndex = 0
-            s.points = []
-            s.clusters = []
-            s.lastAddedPointId = null
-            s.lastEvictedPointId = null
-            s.replayQueue = []
-            s.nextReplayQueue = []
-            s.replayRound = 0
-            s.replayRoundTotal = 0
-            s.replayRoundProcessed = 0
         })
     }
 
-    function advanceReplayRoundIfNeeded() {
-        flush()
-        const hasMorePending = state.currentPointIndex < state.pendingPoints.length
-        if (!hasMorePending && state.replayQueue.length === 0 && state.nextReplayQueue.length > 0) {
-            const nextRound = state.replayRound + 1
-            const nextTotal = state.nextReplayQueue.length
-            setState(s => {
-                s.replayQueue = [...s.nextReplayQueue]
-                s.nextReplayQueue = []
-                s.replayRound = nextRound
-                s.replayRoundTotal = nextTotal
-                s.replayRoundProcessed = 0
-            })
-        }
+    function advanceReplayRound(s: State) {
+        if (s.currentPointIndex < s.pendingPoints.length || s.replayQueue.length > 0 || s.nextReplayQueue.length === 0) return
+        s.replayQueue = [...s.nextReplayQueue]
+        s.nextReplayQueue = []
+        s.replayRound++
+        s.replayRoundTotal = s.replayQueue.length
+        s.replayRoundProcessed = 0
     }
 
     function stepOnce(): RivalKAddPointResult | null {
-        flush()
-        advanceReplayRoundIfNeeded()
-        flush()
-
-        const hasMorePending = state.currentPointIndex < state.pendingPoints.length
-        const hasReplayItems = state.replayQueue.length > 0
-        const hasNextReplayItems = state.nextReplayQueue.length > 0
-
-        if (!hasMorePending && !hasReplayItems && !hasNextReplayItems) {
-            stopStreaming()
-            return null
-        }
-
-        let result: RivalKAddPointResult
-
-        if (hasMorePending) {
-            const { x, y } = state.pendingPoints[state.currentPointIndex]
-            result = addPoint(clusteringState, x, y, cancelReplay())
-
-            setState(s => {
-                s.currentPointIndex++
-                s.lastAddedPointId = result.point.id
-                s.lastEvictedPointId = result.evicted?.id ?? null
-                if (cancelReplay() && result.evicted) {
-                    s.replayQueue.push({ x: result.evicted.x, y: result.evicted.y })
-                    s.replayRoundTotal = s.replayQueue.length
-                }
-            })
-        } else {
-            const replayPoint = state.replayQueue[0]
-            result = addPoint(clusteringState, replayPoint.x, replayPoint.y, cancelReplay())
-
-            setState(s => {
+        let result: RivalKAddPointResult | null = null
+        // A draft sees preceding writes in this event without flushing unrelated UI work.
+        setState(s => {
+            advanceReplayRound(s)
+            const hasPending = s.currentPointIndex < s.pendingPoints.length
+            const point = hasPending ? s.pendingPoints[s.currentPointIndex] : s.replayQueue[0]
+            if (!point) {
+                clearTimer()
+                s.isStreaming = false
+                return
+            }
+            const added = addPoint(clusteringState, point.x, point.y, s.cancelReplay)
+            result = added
+            s.lastAddedPointId = added.point.id
+            s.lastEvictedPointId = added.evicted?.id ?? null
+            if (hasPending) s.currentPointIndex++
+            else {
                 s.replayQueue.shift()
                 s.replayRoundProcessed++
-                s.lastAddedPointId = result.point.id
-                s.lastEvictedPointId = result.evicted?.id ?? null
-                if (cancelReplay() && result.evicted) {
-                    s.nextReplayQueue.push({ x: result.evicted.x, y: result.evicted.y })
-                }
-            })
-        }
-
-        advanceReplayRoundIfNeeded()
-        syncState()
+            }
+            if (s.cancelReplay && added.evicted) {
+                const queue = hasPending ? s.replayQueue : s.nextReplayQueue
+                queue.push({ x: added.evicted.x, y: added.evicted.y })
+                if (hasPending) s.replayRoundTotal = s.replayQueue.length
+            }
+            advanceReplayRound(s)
+            syncState(s)
+        })
         return result
     }
 
     function addSinglePoint(x: number, y: number): RivalKAddPointResult {
-        flush()
         const result = addPoint(clusteringState, x, y)
         setState(s => {
             s.lastAddedPointId = result.point.id
             s.lastEvictedPointId = result.evicted?.id ?? null
+            syncState(s)
         })
-        syncState()
         return result
     }
 
     function startStreaming() {
-        flush()
-        if (streamingInterval) return
-        const hasMorePending = state.currentPointIndex < state.pendingPoints.length
-        const hasReplayItems = state.replayQueue.length > 0 || state.nextReplayQueue.length > 0
-        if (!hasMorePending && !hasReplayItems) return
-
+        if (streamingInterval !== null) return
         setState(s => {
+            if (s.currentPointIndex >= s.pendingPoints.length && s.replayQueue.length === 0 && s.nextReplayQueue.length === 0) return
             s.isStreaming = true
+            streamingInterval = setInterval(stepOnce, s.streamSpeed)
         })
-        streamingInterval = setInterval(() => {
-            const result = stepOnce()
-            if (!result) stopStreaming()
-        }, streamSpeed())
     }
 
     function stopStreaming() {
-        if (streamingInterval) {
-            clearInterval(streamingInterval)
-            streamingInterval = null
-        }
-        setState(s => {
-            s.isStreaming = false
-        })
+        clearTimer()
+        setState(s => { s.isStreaming = false })
     }
 
     function reset() {
-        flush()
-        stopStreaming()
-        clusteringState = createRivalKState(k())
+        clearTimer()
         setState(s => {
-            s.points = []
-            s.clusters = []
+            restart(s)
             s.pendingPoints = []
-            s.currentPointIndex = 0
-            s.lastAddedPointId = null
-            s.lastEvictedPointId = null
-            s.replayQueue = []
-            s.nextReplayQueue = []
-            s.replayRound = 0
-            s.replayRoundTotal = 0
-            s.replayRoundProcessed = 0
         })
     }
 
     return {
-        k,
-        setK,
-        cancelReplay,
-        setCancelReplay,
-        points: () => state.points,
-        clusters: () => state.clusters,
-        isStreaming: () => state.isStreaming,
-        streamSpeed,
-        setStreamSpeed,
-        pendingPoints: () => state.pendingPoints,
-        currentPointIndex: () => state.currentPointIndex,
-        lastAddedPointId: () => state.lastAddedPointId,
+        k: () => state.k,
+        setK: (value: number) => configure(s => { s.k = value }),
+        cancelReplay: () => state.cancelReplay,
+        setCancelReplay: (value: boolean) => { setState(s => { s.cancelReplay = value }) },
         lastEvictedPointId: () => state.lastEvictedPointId,
-        replayQueue: () => state.replayQueue,
         replayQueueLength: () => state.replayQueue.length + state.nextReplayQueue.length,
+        replayQueue: () => state.replayQueue,
         replayRound: () => state.replayRound,
         replayRoundTotal: () => state.replayRoundTotal,
         replayRoundProcessed: () => state.replayRoundProcessed,
-        generateRandomPoints,
-        startStreaming,
-        stopStreaming,
-        stepOnce,
-        reset,
-        addSinglePoint,
+        points: () => state.points,
+        clusters: () => state.clusters,
+        isStreaming: () => state.isStreaming,
+        streamSpeed: () => state.streamSpeed,
+        setStreamSpeed: (value: number) => { setState(s => { s.streamSpeed = value }) },
+        pendingPoints: () => state.pendingPoints,
+        currentPointIndex: () => state.currentPointIndex,
+        lastAddedPointId: () => state.lastAddedPointId,
+        generateRandomPoints, startStreaming, stopStreaming, stepOnce, reset, addSinglePoint,
     }
 }

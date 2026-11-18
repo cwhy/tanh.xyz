@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createRoot, flush } from 'solid-js'
+import { createRoot, createSignal, flush } from 'solid-js'
 import { createOnlineKMeansStore } from './online-k-means/store'
 import { createNKClusteringStore } from './nk-clustering/store'
 import { createRivalKStore } from './rival-k/store'
@@ -50,6 +50,20 @@ describe('clustering actions with batched writes', () => {
             flush()
             expect(store.points()).toHaveLength(0)
             expect(store.isStreaming()).toBe(false)
+        })
+
+        it(`${name}: leaves unrelated writes batched`, () => {
+            const [value, setValue] = owned(() => createSignal(0))
+            const store = owned(() => create())
+            setValue(1)
+            store.generateRandomPoints(5, 'uniform')
+            store.stepOnce()
+            store.setK(2)
+            expect(value()).toBe(0)
+            expect(store.currentPointIndex()).toBe(0)
+            flush()
+            expect(value()).toBe(1)
+            expect(store.k()).toBe(2)
         })
 
         it(`${name}: starts immediately after generation and stops its timer`, () => {
