@@ -1,4 +1,4 @@
-import { For, Show, createSignal, onCleanup, onMount } from 'solid-js'
+import { For, Show, createSignal, onSettled } from 'solid-js'
 import { createNKClusteringStore } from './store'
 import type { BasicDatasetDistribution } from '../../lib/datasets/basic'
 import type { CenterType } from './algorithm'
@@ -32,7 +32,7 @@ export function NKClusteringDemo() {
     const [plotSize, setPlotSize] = createSignal(canvasSize)
     let stageCanvasContainerRef: HTMLDivElement | undefined
 
-    onMount(() => {
+    onSettled(() => {
         const updatePlotSize = () => {
             if (!stageCanvasContainerRef) return
             const { clientWidth, clientHeight } = stageCanvasContainerRef
@@ -45,9 +45,7 @@ export function NKClusteringDemo() {
         const resizeObserver = new ResizeObserver(updatePlotSize)
         resizeObserver.observe(stageCanvasContainerRef!)
 
-        onCleanup(() => {
-            resizeObserver.disconnect()
-        })
+        return () => { resizeObserver.disconnect(); store.stopStreaming() }
     })
 
     function handleCanvasClick(e: MouseEvent) {
@@ -372,7 +370,7 @@ export function NKClusteringDemo() {
                                 </div>
                                 <div class="h-2 w-full bg-base-300 rounded-full overflow-hidden">
                                     <div
-                                        class={`h-full transition-all duration-300 ${store.replayQueueLength() > 0 ? 'bg-warning' : 'bg-success'}`}
+                                        class={["h-full transition-all duration-300", store.replayQueueLength() > 0 ? 'bg-warning' : 'bg-success']}
                                         style={{ width: store.replayQueueLength() > 0 ? '100%' : '0%' }}
                                     />
                                 </div>

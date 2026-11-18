@@ -36,18 +36,18 @@ export interface CurriculumPhase {
 
 export interface EncodedAdditionBatch {
     pairs: AdditionPair[]
-    inputs: Float32Array
-    targets: Float32Array
+    inputs: Float32Array<ArrayBuffer>
+    targets: Float32Array<ArrayBuffer>
     targetDigits: Uint8Array
     batchSize: number
 }
 
 export interface EncodedAdditionLmBatch {
     pairs: AdditionPair[]
-    promptTokens: Int32Array
-    inputTokens: Int32Array
-    labelTokens: Int32Array
-    labelMask: Float32Array
+    promptTokens: Int32Array<ArrayBuffer>
+    inputTokens: Int32Array<ArrayBuffer>
+    labelTokens: Int32Array<ArrayBuffer>
+    labelMask: Float32Array<ArrayBuffer>
     targetDigits: Uint8Array
     batchSize: number
 }
@@ -191,8 +191,8 @@ export function encodeAdditionLmPairs(pairs: AdditionPair[]): EncodedAdditionLmB
 
 function encodePairIntoMlp(
     pair: AdditionPair,
-    inputs: Float32Array,
-    targets: Float32Array,
+    inputs: Float32Array<ArrayBuffer>,
+    targets: Float32Array<ArrayBuffer>,
     targetDigits: Uint8Array,
     batchIndex: number
 ): void {
@@ -216,10 +216,10 @@ function encodePairIntoMlp(
 
 function encodePairIntoLm(
     pair: AdditionPair,
-    promptTokensOut: Int32Array,
-    inputTokensOut: Int32Array,
-    labelTokensOut: Int32Array,
-    labelMaskOut: Float32Array,
+    promptTokensOut: Int32Array<ArrayBuffer>,
+    inputTokensOut: Int32Array<ArrayBuffer>,
+    labelTokensOut: Int32Array<ArrayBuffer>,
+    labelMaskOut: Float32Array<ArrayBuffer>,
     targetDigitsOut: Uint8Array,
     batchIndex: number
 ): void {

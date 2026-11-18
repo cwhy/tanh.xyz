@@ -1,4 +1,4 @@
-import { For, Show, createMemo, onCleanup, onMount } from 'solid-js'
+import { For, Show, createMemo, onSettled } from 'solid-js'
 import { SingleStageLayout } from '../../components/demo-layouts/SingleStage'
 import { ConfigRadioGroup } from '../../components/ui-parts/configs/ConfigRadioGroup'
 import { CANONICAL_NEEDLE_MANIFEST_URL, decodeNeedleTokenPieces, tokenPiece } from './models'
@@ -47,12 +47,9 @@ export function NeedleDemo() {
         dispose,
     } = store
 
-    onMount(() => {
+    onSettled(() => {
         void initialize()
-    })
-
-    onCleanup(() => {
-        dispose()
+        return dispose
     })
 
     const sourceLabel = createMemo(() => {

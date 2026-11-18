@@ -5,8 +5,7 @@
  * Note: If deferEviction is true, evictions are deferred and stored in a replay queue.
  */
 
-import { createSignal } from 'solid-js'
-import { createStore, produce } from 'solid-js/store'
+import { createSignal, flush, untrack, createStore } from 'solid-js'
 import { initJax } from '../../lib/deeplearning/runtime'
 import { fetchMnistRaw, type MnistFetchProgress } from '../../lib/datasources/mnist'
 import { formatMnistForMlp } from '../../lib/datasets/jax/mnist'
@@ -110,13 +109,17 @@ export function createMnistNKStore(): MnistNKStore {
     const [streamSpeed, setStreamSpeed] = createSignal(200)
     const [jaxDevice, setJaxDevice] = createSignal<string | null>(null)
 
+    // These imperative algorithms consume committed UI inputs. Flush at action boundaries
+    // before reading a value changed by an earlier action in the same event.
     const setN = (newN: number) => {
+        flush()
         if (newN <= k()) setKInternal(Math.max(1, newN - 1))
         setNInternal(newN)
         reinitClustering()
     }
 
     const setK = (newK: number) => {
+        flush()
         if (newK >= n()) setNInternal(newK + 1)
         setKInternal(newK)
         reinitClustering()
@@ -129,8 +132,7 @@ export function createMnistNKStore(): MnistNKStore {
     // Per-session data (reshuffled on generate/reset)
     let shuffledIndices: number[] = []
     let distanceCache: DistanceCache = new DistanceCache(0)
-    // eslint-disable-next-line solid/reactivity
-    let clusteringState: MnistNKState = createMnistNKState(n(), k(), top1Enabled(), last1ShrinkEnabled())
+    let clusteringState: MnistNKState = untrack(() => createMnistNKState(n(), k(), top1Enabled(), last1ShrinkEnabled()))
 
     const [state, setState] = createStore({
         loadStatus: 'idle' as LoadStatus,
@@ -196,7 +198,9 @@ export function createMnistNKStore(): MnistNKStore {
             }
         })
 
-        setState({ clusters: displays })
+        setState(s => {
+            s.clusters = displays
+        })
 
         // Record evenness history snapshot
         if (clusters.length > 0) {
@@ -219,17 +223,18 @@ export function createMnistNKStore(): MnistNKStore {
     }
 
     function reinitClustering() {
+        flush()
         stopStreaming()
         clusteringState = createMnistNKState(n(), k(), top1Enabled(), last1ShrinkEnabled())
         evennessHistoryArr = []
         setHistoryVersion(0)
-        setState({
-            clusters: [],
-            currentIdx: 0,
-            lastAddedDataIndex: null,
-            lastEvictedDataIndex: null,
-            replayQueue: [],
-            nextReplayQueue: [],
+        setState(s => {
+            s.clusters = []
+            s.currentIdx = 0
+            s.lastAddedDataIndex = null
+            s.lastEvictedDataIndex = null
+            s.replayQueue = []
+            s.nextReplayQueue = []
         })
         if (allImageData.length > 0) {
             distanceCache = new DistanceCache(totalImages)
@@ -243,14 +248,19 @@ export function createMnistNKStore(): MnistNKStore {
     async function loadAndGenerate() {
         if (state.loadStatus === 'loading') return
 
-        setState({ loadStatus: 'loading', loadProgress: null })
+        setState(s => {
+            s.loadStatus = 'loading'
+            s.loadProgress = null
+        })
 
         try {
             const device = await initJax()
             setJaxDevice(device)
 
             const raw = await fetchMnistRaw({
-                onProgress: (p) => setState({ loadProgress: p }),
+                onProgress: (p) => setState(s => {
+                    s.loadProgress = p
+                }),
             })
             const dataset = formatMnistForMlp(raw)
 
@@ -270,19 +280,22 @@ export function createMnistNKStore(): MnistNKStore {
             shuffledIndices = indices.slice(0, subsetSize())
 
             clusteringState = createMnistNKState(n(), k(), top1Enabled(), last1ShrinkEnabled())
-            setState({
-                loadStatus: 'ready',
-                loadProgress: null,
-                clusters: [],
-                currentIdx: 0,
-                lastAddedDataIndex: null,
-                lastEvictedDataIndex: null,
-                replayQueue: [],
-                nextReplayQueue: [],
+            setState(s => {
+                s.loadStatus = 'ready'
+                s.loadProgress = null
+                s.clusters = []
+                s.currentIdx = 0
+                s.lastAddedDataIndex = null
+                s.lastEvictedDataIndex = null
+                s.replayQueue = []
+                s.nextReplayQueue = []
             })
         } catch (err) {
             console.error('MNIST NK: failed to load data', err)
-            setState({ loadStatus: 'idle', loadProgress: null })
+            setState(s => {
+                s.loadStatus = 'idle'
+                s.loadProgress = null
+            })
         }
     }
 
@@ -291,14 +304,16 @@ export function createMnistNKStore(): MnistNKStore {
     // ---------------------------------------------------------------------------
 
     async function stepOnce(): Promise<MnistAddPointResult | null> {
+        flush()
         const hasMorePending = state.currentIdx < shuffledIndices.length
 
         // Advance replay round if needed
         if (!hasMorePending && state.replayQueue.length === 0 && state.nextReplayQueue.length > 0) {
-            setState(produce(s => {
+            setState(s => {
                 s.replayQueue = [...s.nextReplayQueue]
                 s.nextReplayQueue = []
-            }))
+            })
+            flush()
             // Fall through to process the newly promoted replay queue
         }
 
@@ -315,13 +330,15 @@ export function createMnistNKStore(): MnistNKStore {
         if (hasMorePending) {
             // Process original pending points first
             dataIndex = shuffledIndices[state.currentIdx]
-            setState({ currentIdx: state.currentIdx + 1 })
+            setState(s => {
+                s.currentIdx = state.currentIdx + 1
+            })
         } else {
             // Process replay queue (after all original points are done)
             dataIndex = state.replayQueue[0]
-            setState(produce(s => {
+            setState(s => {
                 s.replayQueue.shift()  // Remove processed replay item
-            }))
+            })
         }
 
         // Pre-warm the distance cache: batch-compute distances from this image
@@ -336,7 +353,7 @@ export function createMnistNKStore(): MnistNKStore {
                 for (let i = 0; i < modeDataIndices.length; i++) {
                     distanceCache.set(dataIndex, modeDataIndices[i], batchDists[i])
                 }
-            } catch (_) {
+            } catch {
                 // Fallback: cache will compute on demand
             }
         }
@@ -345,7 +362,7 @@ export function createMnistNKStore(): MnistNKStore {
 
         // Handle deferred evictions
         if (deferEviction() && result.evicted) {
-            setState(produce(s => {
+            setState(s => {
                 if (hasMorePending) {
                     // Deferred evictions from round 1 become round 2 replay candidates.
                     s.replayQueue.push(result.evicted!.dataIndex)
@@ -353,12 +370,12 @@ export function createMnistNKStore(): MnistNKStore {
                     // Deferred evictions from replay round r are processed in round r+1.
                     s.nextReplayQueue.push(result.evicted!.dataIndex)
                 }
-            }))
+            })
         }
 
-        setState({
-            lastAddedDataIndex: result.point.dataIndex,
-            lastEvictedDataIndex: result.evicted?.dataIndex ?? null,
+        setState(s => {
+            s.lastAddedDataIndex = result.point.dataIndex
+            s.lastEvictedDataIndex = result.evicted?.dataIndex ?? null
         })
 
         syncState()
@@ -366,12 +383,15 @@ export function createMnistNKStore(): MnistNKStore {
     }
 
     function startStreaming() {
+        flush()
         if (streamingInterval) return
         if (state.loadStatus !== 'ready') return
         const hasReplayItems = state.replayQueue.length > 0 || state.nextReplayQueue.length > 0
         if (state.currentIdx >= shuffledIndices.length && !hasReplayItems) return
 
-        setState({ isStreaming: true })
+        setState(s => {
+            s.isStreaming = true
+        })
         streamingInterval = setInterval(async () => {
             const result = await stepOnce()
             if (!result) stopStreaming()
@@ -383,10 +403,13 @@ export function createMnistNKStore(): MnistNKStore {
             clearInterval(streamingInterval)
             streamingInterval = null
         }
-        setState({ isStreaming: false })
+        setState(s => {
+            s.isStreaming = false
+        })
     }
 
     function reset() {
+        flush()
         stopStreaming()
         evennessHistoryArr = []
         setHistoryVersion(0)
@@ -400,13 +423,13 @@ export function createMnistNKStore(): MnistNKStore {
             distanceCache = new DistanceCache(totalImages)
         }
         clusteringState = createMnistNKState(n(), k(), top1Enabled(), last1ShrinkEnabled())
-        setState({
-            clusters: [],
-            currentIdx: 0,
-            lastAddedDataIndex: null,
-            lastEvictedDataIndex: null,
-            replayQueue: [],
-            nextReplayQueue: [],
+        setState(s => {
+            s.clusters = []
+            s.currentIdx = 0
+            s.lastAddedDataIndex = null
+            s.lastEvictedDataIndex = null
+            s.replayQueue = []
+            s.nextReplayQueue = []
         })
     }
 

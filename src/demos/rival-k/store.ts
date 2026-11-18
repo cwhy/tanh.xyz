@@ -3,8 +3,7 @@
  * Manages streaming points and clustering state
  */
 
-import { createSignal } from 'solid-js'
-import { createStore, produce } from 'solid-js/store'
+import { createSignal, flush, untrack, createStore } from 'solid-js'
 import {
     createRivalKState,
     addPoint,
@@ -43,28 +42,31 @@ export function createRivalKStore() {
     const [k, setKInternal] = createSignal(3)
     const [cancelReplay, setCancelReplay] = createSignal(false)
 
+    // These imperative algorithms consume committed UI inputs. Flush at action boundaries
+    // before reading a value changed by an earlier action in the same event.
     const setK = (newK: number) => {
+        flush()
         setKInternal(newK)
         reinitState()
     }
 
     // Clustering state
-    // eslint-disable-next-line solid/reactivity
-    let clusteringState = createRivalKState(k())
+    let clusteringState = untrack(() => createRivalKState(k()))
 
     function reinitState() {
+        flush()
         clusteringState = createRivalKState(k())
-        setState({
-            points: [],
-            clusters: [],
-            currentPointIndex: 0,
-            lastAddedPointId: null,
-            lastEvictedPointId: null,
-            replayQueue: [],
-            nextReplayQueue: [],
-            replayRound: 0,
-            replayRoundTotal: 0,
-            replayRoundProcessed: 0,
+        setState(s => {
+            s.points = []
+            s.clusters = []
+            s.currentPointIndex = 0
+            s.lastAddedPointId = null
+            s.lastEvictedPointId = null
+            s.replayQueue = []
+            s.nextReplayQueue = []
+            s.replayRound = 0
+            s.replayRoundTotal = 0
+            s.replayRoundProcessed = 0
         })
     }
 
@@ -122,13 +124,14 @@ export function createRivalKStore() {
             color: oklchToCss(getClusterColor(c.id)),
         }))
 
-        setState({
-            points: pointsWithCluster,
-            clusters: clusterInfos,
+        setState(s => {
+            s.points = pointsWithCluster
+            s.clusters = clusterInfos
         })
     }
 
     function generateRandomPoints(count: number, distribution: BasicDatasetDistribution) {
+        flush()
         stopStreaming()
         resetRivalKState(clusteringState)
         clusteringState = createRivalKState(k())
@@ -141,38 +144,41 @@ export function createRivalKStore() {
                 ;[points[i], points[j]] = [points[j], points[i]]
         }
 
-        setState({
-            pendingPoints: points,
-            currentPointIndex: 0,
-            points: [],
-            clusters: [],
-            lastAddedPointId: null,
-            lastEvictedPointId: null,
-            replayQueue: [],
-            nextReplayQueue: [],
-            replayRound: 0,
-            replayRoundTotal: 0,
-            replayRoundProcessed: 0,
+        setState(s => {
+            s.pendingPoints = points
+            s.currentPointIndex = 0
+            s.points = []
+            s.clusters = []
+            s.lastAddedPointId = null
+            s.lastEvictedPointId = null
+            s.replayQueue = []
+            s.nextReplayQueue = []
+            s.replayRound = 0
+            s.replayRoundTotal = 0
+            s.replayRoundProcessed = 0
         })
     }
 
     function advanceReplayRoundIfNeeded() {
+        flush()
         const hasMorePending = state.currentPointIndex < state.pendingPoints.length
         if (!hasMorePending && state.replayQueue.length === 0 && state.nextReplayQueue.length > 0) {
             const nextRound = state.replayRound + 1
             const nextTotal = state.nextReplayQueue.length
-            setState(produce(s => {
+            setState(s => {
                 s.replayQueue = [...s.nextReplayQueue]
                 s.nextReplayQueue = []
                 s.replayRound = nextRound
                 s.replayRoundTotal = nextTotal
                 s.replayRoundProcessed = 0
-            }))
+            })
         }
     }
 
     function stepOnce(): RivalKAddPointResult | null {
+        flush()
         advanceReplayRoundIfNeeded()
+        flush()
 
         const hasMorePending = state.currentPointIndex < state.pendingPoints.length
         const hasReplayItems = state.replayQueue.length > 0
@@ -189,7 +195,7 @@ export function createRivalKStore() {
             const { x, y } = state.pendingPoints[state.currentPointIndex]
             result = addPoint(clusteringState, x, y, cancelReplay())
 
-            setState(produce(s => {
+            setState(s => {
                 s.currentPointIndex++
                 s.lastAddedPointId = result.point.id
                 s.lastEvictedPointId = result.evicted?.id ?? null
@@ -197,12 +203,12 @@ export function createRivalKStore() {
                     s.replayQueue.push({ x: result.evicted.x, y: result.evicted.y })
                     s.replayRoundTotal = s.replayQueue.length
                 }
-            }))
+            })
         } else {
             const replayPoint = state.replayQueue[0]
             result = addPoint(clusteringState, replayPoint.x, replayPoint.y, cancelReplay())
 
-            setState(produce(s => {
+            setState(s => {
                 s.replayQueue.shift()
                 s.replayRoundProcessed++
                 s.lastAddedPointId = result.point.id
@@ -210,7 +216,7 @@ export function createRivalKStore() {
                 if (cancelReplay() && result.evicted) {
                     s.nextReplayQueue.push({ x: result.evicted.x, y: result.evicted.y })
                 }
-            }))
+            })
         }
 
         advanceReplayRoundIfNeeded()
@@ -219,22 +225,26 @@ export function createRivalKStore() {
     }
 
     function addSinglePoint(x: number, y: number): RivalKAddPointResult {
+        flush()
         const result = addPoint(clusteringState, x, y)
-        setState({
-            lastAddedPointId: result.point.id,
-            lastEvictedPointId: result.evicted?.id ?? null,
+        setState(s => {
+            s.lastAddedPointId = result.point.id
+            s.lastEvictedPointId = result.evicted?.id ?? null
         })
         syncState()
         return result
     }
 
     function startStreaming() {
+        flush()
         if (streamingInterval) return
         const hasMorePending = state.currentPointIndex < state.pendingPoints.length
         const hasReplayItems = state.replayQueue.length > 0 || state.nextReplayQueue.length > 0
         if (!hasMorePending && !hasReplayItems) return
 
-        setState({ isStreaming: true })
+        setState(s => {
+            s.isStreaming = true
+        })
         streamingInterval = setInterval(() => {
             const result = stepOnce()
             if (!result) stopStreaming()
@@ -246,24 +256,27 @@ export function createRivalKStore() {
             clearInterval(streamingInterval)
             streamingInterval = null
         }
-        setState({ isStreaming: false })
+        setState(s => {
+            s.isStreaming = false
+        })
     }
 
     function reset() {
+        flush()
         stopStreaming()
         clusteringState = createRivalKState(k())
-        setState({
-            points: [],
-            clusters: [],
-            pendingPoints: [],
-            currentPointIndex: 0,
-            lastAddedPointId: null,
-            lastEvictedPointId: null,
-            replayQueue: [],
-            nextReplayQueue: [],
-            replayRound: 0,
-            replayRoundTotal: 0,
-            replayRoundProcessed: 0,
+        setState(s => {
+            s.points = []
+            s.clusters = []
+            s.pendingPoints = []
+            s.currentPointIndex = 0
+            s.lastAddedPointId = null
+            s.lastEvictedPointId = null
+            s.replayQueue = []
+            s.nextReplayQueue = []
+            s.replayRound = 0
+            s.replayRoundTotal = 0
+            s.replayRoundProcessed = 0
         })
     }
 

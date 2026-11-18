@@ -92,7 +92,7 @@ export async function computeBatchDistancesJax(
             i * dim
         )
     }
-    const queryPixels = imageData.subarray(queryIdx * dim, (queryIdx + 1) * dim)
+    const queryPixels = imageData.slice(queryIdx * dim, (queryIdx + 1) * dim)
 
     // JAX-JS: broadcast subtract [m, dim] - [1, dim], square, sum axis 1, sqrt
     const q = np.array(queryPixels, { shape: [1, dim] })

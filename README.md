@@ -25,7 +25,7 @@ See [docs/design-guideline.md](docs/design-guideline.md) for complete design spe
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: [SolidJS](https://solidjs.com) - Reactive UI framework
+- **Frontend**: [SolidJS 2](https://solidjs.com) - Reactive UI framework
 - **Router**: [TanStack Start](https://tanstack.com/start) - Full-stack framework
 - **Styling**: [DaisyUI](https://daisyui.com) + [Tailwind CSS](https://tailwindcss.com)
 - **ML Library**: [jax-js](https://github.com/ekzhang/jax-js) - JAX implementation for JavaScript with WebGPU
@@ -45,6 +45,27 @@ bun run build
 # Deploy to Cloudflare Pages
 bun run deploy
 ```
+
+## Solid 2 migration
+
+The app uses Solid and `@solidjs/web` 2.0.0 with the stable
+`@solidjs/vite-plugin` 3.0.1 compiler integration. TanStack Router and Start are
+pinned to 2.0.0-rc.10 because their stable 1.x packages target Solid 1.
+Keep these packages coordinated when upgrading; do not independently bump
+TanStack packages to the `latest` tag while it still points to 1.x.
+Icons come from `@lucide/solid`.
+
+Run `bun run typecheck`, `bun run lint`, `bun run test`, and `bun run build`
+before release. The store regression tests deliberately use Solid's development
+client runtime in Node: the server runtime would hide batched-write bugs.
+Clustering actions flush at the boundary with synchronous algorithms; normal
+UI updates use Solid's default batching. Effects separate tracked inputs from
+DOM work, and lifecycle callbacks return their cleanup functions.
+
+For browser validation, exercise generate/step/stream/pause/reset, parameter
+changes, route navigation, and SSR hydration using both `bun run dev` and the
+Cloudflare build via `bun run preview`. Remote model and dataset downloads also
+need validation from an allowed origin; localhost may be rejected by media CORS.
 
 ## 📁 Project Structure
 

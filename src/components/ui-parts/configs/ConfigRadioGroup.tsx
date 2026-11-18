@@ -1,4 +1,5 @@
-import { For, Show, type JSX } from 'solid-js'
+import { For, Show } from 'solid-js'
+import type { JSX } from '@solidjs/web'
 
 interface ConfigRadioOption<T extends string> {
     label: string
@@ -27,7 +28,7 @@ export function ConfigRadioGroup<T extends string>(props: ConfigRadioGroupProps<
         <For each={props.options}>
             {(option) => (
                 <input
-                    class={`join-item btn btn-sm px-4 ${props.btnClass ?? 'btn-outline'}`}
+                    class={["join-item btn btn-sm px-4", props.btnClass ?? 'btn-outline']}
                     type="radio"
                     name={props.name}
                     aria-label={option.label}
@@ -45,7 +46,7 @@ export function ConfigRadioGroup<T extends string>(props: ConfigRadioGroupProps<
                 when={isControlsInline()}
                 fallback={
                     <>
-                        <label class={`label pb-2 ${isLabelInline() ? 'flex justify-between items-center' : ''}`}>
+                        <label class={["label pb-2", isLabelInline() ? 'flex justify-between items-center' : '']}>
                             <span class="label-text font-medium">{props.label}</span>
                             <Show when={props.labelRight !== undefined}>
                                 <span class={props.labelRightClass ?? 'label-text-alt text-base-content/60'}>{props.labelRight}</span>
@@ -56,7 +57,7 @@ export function ConfigRadioGroup<T extends string>(props: ConfigRadioGroupProps<
                 }
             >
                 <div class="flex flex-wrap items-center justify-between gap-3 pb-2">
-                    <label class={`label py-0 ${isLabelInline() ? 'flex justify-between items-center' : ''}`}>
+                    <label class={["label py-0", isLabelInline() ? 'flex justify-between items-center' : '']}>
                         <span class="label-text font-medium">{props.label}</span>
                         <Show when={props.labelRight !== undefined}>
                             <span class={props.labelRightClass ?? 'label-text-alt text-base-content/60'}>{props.labelRight}</span>

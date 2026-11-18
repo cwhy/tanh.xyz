@@ -31,10 +31,9 @@ export function DemoCard(props: DemoCardProps) {
 
             <a
                 href={isReady() ? props.href : '#'}
-                class={`card bg-base-100 shadow-[4px_4px_0px_0px_#2d2d2d] border-[3px] ${isReady()
+                class={["card bg-base-100 shadow-[4px_4px_0px_0px_#2d2d2d] border-[3px]", isReady()
                     ? 'border-base-content'
-                    : 'border-dashed border-base-content/50'
-                    } hover:shadow-[2px_2px_0px_0px_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-100 group overflow-hidden w-full relative block`}
+                    : 'border-dashed border-base-content/50', "hover:shadow-[2px_2px_0px_0px_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-100 group overflow-hidden w-full relative block"]}
                 style={{
                     'border-radius': variant().borderRadius,
                     opacity: isReady() ? 1 : 0.6,

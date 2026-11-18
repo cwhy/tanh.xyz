@@ -1,4 +1,5 @@
-import { For, Index, Show, createEffect, createMemo, createSignal, onMount, type JSX } from 'solid-js'
+import { For, Show, createEffect, createMemo, createSignal, onSettled } from 'solid-js'
+import type { JSX } from '@solidjs/web'
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
 import { ConfigRadioGroup } from '../../components/ui-parts/configs/ConfigRadioGroup'
 import { SingleStageFullLayout } from '../../components/demo-layouts/SingleStageFull'
@@ -18,8 +19,7 @@ const rankingOptions: Array<{ label: string; value: RankingMode }> = [
 function SamplePreview(props: { pixels: Float32Array }): JSX.Element {
     let canvas!: HTMLCanvasElement
 
-    createEffect(() => {
-        const pixels = props.pixels
+    createEffect(() => props.pixels, pixels => {
         const ctx = canvas.getContext('2d')
         if (!ctx) return
 
@@ -126,7 +126,7 @@ export function MnistTrainingDemo() {
         getTrainImagePixels,
     } = store
 
-    onMount(() => {
+    onSettled(() => {
         void initialize()
     })
     const [showDigitLabels, setShowDigitLabels] = createSignal(true)
@@ -396,7 +396,7 @@ export function MnistTrainingDemo() {
                                     fallback={<div class="text-sm text-base-content/50 pt-3">No ranked samples yet.</div>}
                                 >
                                     <div class="flex flex-wrap gap-3">
-                                        <Index each={displayedSamples()}>
+                                        <For keyed={false} each={displayedSamples()}>
                                             {(sample) => (
                                                 <SampleCard
                                                     sample={sample()}
@@ -404,7 +404,7 @@ export function MnistTrainingDemo() {
                                                     showLabel={showDigitLabels()}
                                                 />
                                             )}
-                                        </Index>
+                                        </For>
                                     </div>
                                 </Show>
                             </div>

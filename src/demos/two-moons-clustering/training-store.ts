@@ -3,8 +3,7 @@
  * Separates training logic from UI components
  */
 
-import { createSignal } from 'solid-js'
-import { createStore } from 'solid-js/store'
+import { createSignal, createStore } from 'solid-js'
 import { generateTwoMoons, normalizeForVisualization, type DataPoint } from '../../lib/datasets/jax/two-moons'
 import {
     initJax,
@@ -26,7 +25,6 @@ export interface TrainingState {
     isLoading: boolean
     device: string
     points: DataPoint[]
-    params: NetworkParams | null
     decisionGrid: number[][] | null
     epoch: number
     loss: number | null
@@ -50,7 +48,6 @@ export function createTrainingStore(config: TrainingConfig = {}) {
         isLoading: true,
         device: '',
         points: [],
-        params: null,
         decisionGrid: null,
         epoch: 0,
         loss: null,
@@ -70,6 +67,8 @@ export function createTrainingStore(config: TrainingConfig = {}) {
     let y: np.Array | null = null
     let trainingX: number[][] = []
     let trainingY: number[] = []
+    // JAX arrays own native resources and private fields; keep them out of store proxies.
+    let params: NetworkParams | null = null
     let optState: OptState | null = null
 
     /**
@@ -77,7 +76,10 @@ export function createTrainingStore(config: TrainingConfig = {}) {
      */
     async function initialize(): Promise<string> {
         const dev = await initJax()
-        setState({ isLoading: false, device: dev })
+        setState(s => {
+            s.isLoading = false
+            s.device = dev
+        })
         generateData()
         return dev
     }
@@ -89,7 +91,7 @@ export function createTrainingStore(config: TrainingConfig = {}) {
         // Cleanup old data
         X?.dispose()
         y?.dispose()
-        tree.dispose(state.params)
+        tree.dispose(params)
 
         const dataset = normalizeForVisualization(
             generateTwoMoons(nSamples(), noise())
@@ -105,23 +107,23 @@ export function createTrainingStore(config: TrainingConfig = {}) {
 
         // Initialize new network
         const newParams = initParams(hiddenSize)
+        params = newParams
         optState = initOptimizer(newParams, learningRate(), optimizerType())
 
-        setState({
-            points: dataset.points,
-            params: newParams,
-            epoch: 0,
-            loss: null,
-            decisionGrid: null,
+        setState(s => {
+            s.points = dataset.points
+            s.epoch = 0
+            s.loss = null
+            s.decisionGrid = null
         })
     }
 
     /**
      * Reinitialize optimizer (e.g., when switching optimizer type)
      */
-    function reinitOptimizer() {
-        if (state.params) {
-            optState = initOptimizer(state.params, learningRate(), optimizerType())
+    function reinitOptimizer(type = optimizerType()) {
+        if (params) {
+            optState = initOptimizer(params, learningRate(), type)
         }
     }
 
@@ -129,9 +131,11 @@ export function createTrainingStore(config: TrainingConfig = {}) {
      * Run training for configured number of epochs
      */
     async function runTraining(): Promise<void> {
-        if (!state.params || !optState || state.isTraining) return
+        if (!params || !optState || state.isTraining) return
 
-        setState({ isTraining: true })
+        setState(s => {
+            s.isTraining = true
+        })
 
         // Clamp batch size if needed
         const maxBatch = nSamples() * 2
@@ -139,8 +143,9 @@ export function createTrainingStore(config: TrainingConfig = {}) {
             setBatchSize(maxBatch)
         }
 
+        let currentParams = params
         const totalEpochs = epochsPerRound()
-        const bs = batchSize()
+        const bs = Math.min(batchSize(), maxBatch)
         const n = trainingX.length
 
         for (let i = 0; i < totalEpochs; i++) {
@@ -174,7 +179,7 @@ export function createTrainingStore(config: TrainingConfig = {}) {
                 }
 
                 const result = await trainStep(
-                    state.params!,
+                    currentParams,
                     optState!,
                     X_batch,
                     y_batch,
@@ -182,29 +187,34 @@ export function createTrainingStore(config: TrainingConfig = {}) {
                     optimizerType()
                 )
 
+                currentParams = result.params
                 optState = result.optState
-                setState({ params: result.params })
+                params = result.params
 
                 epochTotalLoss += result.loss * currentBatchSize
                 epochSamples += currentBatchSize
             }
 
-            setState(s => ({
-                loss: epochTotalLoss / epochSamples,
-                epoch: s.epoch + 1,
-            }))
+            setState(s => {
+                s.loss = epochTotalLoss / epochSamples
+                s.epoch++
+            })
 
             // Update decision boundary periodically
             if ((i + 1) % 10 === 0 || i === totalEpochs - 1) {
-                const grid = await predictGrid(state.params!, gridResolution)
-                setState({ decisionGrid: grid })
+                const grid = await predictGrid(currentParams, gridResolution)
+                setState(s => {
+                    s.decisionGrid = grid
+                })
             }
 
             // Allow UI to update
             await new Promise(r => setTimeout(r, 0))
         }
 
-        setState({ isTraining: false })
+        setState(s => {
+            s.isTraining = false
+        })
     }
 
     return {

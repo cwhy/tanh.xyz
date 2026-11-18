@@ -1,9 +1,9 @@
 import type { MnistRawDataset } from '../../datasources/mnist'
 
 export interface MnistMlpSplit {
-    images: Float32Array
+    images: Float32Array<ArrayBuffer>
     labels: Int32Array
-    oneHot: Float32Array
+    oneHot: Float32Array<ArrayBuffer>
     count: number
     width: number
     height: number

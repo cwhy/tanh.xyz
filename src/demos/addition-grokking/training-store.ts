@@ -1,5 +1,4 @@
-import { createSignal } from 'solid-js'
-import { createStore } from 'solid-js/store'
+import { createSignal, createStore } from 'solid-js'
 import { numpy as np, tree } from '@jax-js/jax'
 import {
     ADDITION_INPUT_SIZE,
@@ -197,19 +196,22 @@ export function createAdditionGrokkingStore() {
 
     async function initialize() {
         try {
-            setState({ isLoading: true, error: null })
+            setState(s => {
+                s.isLoading = true
+                s.error = null
+            })
             const device = await initJax()
             prepareEvalSet()
-            setState({
-                isLoading: false,
-                device,
-                configuredSteps: totalSteps(),
+            setState(s => {
+                s.isLoading = false
+                s.device = device
+                s.configuredSteps = totalSteps()
             })
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to initialize addition demo'
-            setState({
-                isLoading: false,
-                error: message,
+            setState(s => {
+                s.isLoading = false
+                s.error = message
             })
         }
     }
@@ -260,14 +262,14 @@ export function createAdditionGrokkingStore() {
                     testLoss,
                 }]
 
-                setState({
-                    currentStep: step + 1,
-                    phaseLabel: phaseLabel(phase),
-                    trainLoss: result.loss,
-                    testLoss,
-                    trainExact,
-                    testExact,
-                    lossCurve: localCurve,
+                setState(s => {
+                    s.currentStep = step + 1
+                    s.phaseLabel = phaseLabel(phase)
+                    s.trainLoss = result.loss
+                    s.testLoss = testLoss
+                    s.trainExact = trainExact
+                    s.testExact = testExact
+                    s.lossCurve = localCurve
                 })
 
                 await new Promise(resolve => setTimeout(resolve, 0))
@@ -330,14 +332,14 @@ export function createAdditionGrokkingStore() {
                     testLoss,
                 }]
 
-                setState({
-                    currentStep: step + 1,
-                    phaseLabel: phaseLabel(phase),
-                    trainLoss: result.loss,
-                    testLoss,
-                    trainExact,
-                    testExact,
-                    lossCurve: localCurve,
+                setState(s => {
+                    s.currentStep = step + 1
+                    s.phaseLabel = phaseLabel(phase)
+                    s.trainLoss = result.loss
+                    s.testLoss = testLoss
+                    s.trainExact = trainExact
+                    s.testExact = testExact
+                    s.lossCurve = localCurve
                 })
 
                 await new Promise(resolve => setTimeout(resolve, 0))
@@ -352,7 +354,9 @@ export function createAdditionGrokkingStore() {
     async function startTraining() {
         if (state.isLoading || state.isTraining) return
         if (!testMlpBatch || !testLmBatch) {
-            setState({ error: 'Evaluation dataset is not ready. Reinitialize and try again.' })
+            setState(s => {
+                s.error = 'Evaluation dataset is not ready. Reinitialize and try again.'
+            })
             return
         }
 
@@ -367,17 +371,17 @@ export function createAdditionGrokkingStore() {
         prepareEvalSet()
 
         stopRequested = false
-        setState({
-            isTraining: true,
-            isStopping: false,
-            error: null,
-            currentStep: 0,
-            configuredSteps: totalSteps(),
-            trainLoss: null,
-            testLoss: null,
-            trainExact: null,
-            testExact: null,
-            lossCurve: [],
+        setState(s => {
+            s.isTraining = true
+            s.isStopping = false
+            s.error = null
+            s.currentStep = 0
+            s.configuredSteps = totalSteps()
+            s.trainLoss = null
+            s.testLoss = null
+            s.trainExact = null
+            s.testExact = null
+            s.lossCurve = []
         })
 
         try {
@@ -386,16 +390,16 @@ export function createAdditionGrokkingStore() {
             } else {
                 await runMlpTraining()
             }
-            setState({
-                isTraining: false,
-                isStopping: false,
+            setState(s => {
+                s.isTraining = false
+                s.isStopping = false
             })
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Training failed'
-            setState({
-                isTraining: false,
-                isStopping: false,
-                error: message,
+            setState(s => {
+                s.isTraining = false
+                s.isStopping = false
+                s.error = message
             })
         } finally {
             stopRequested = false
@@ -405,7 +409,9 @@ export function createAdditionGrokkingStore() {
     function stopTraining() {
         if (!state.isTraining) return
         stopRequested = true
-        setState({ isStopping: true })
+        setState(s => {
+            s.isStopping = true
+        })
     }
 
     function resetRepoDefaults() {

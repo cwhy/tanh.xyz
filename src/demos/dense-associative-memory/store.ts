@@ -1,5 +1,4 @@
-import { createSignal } from 'solid-js'
-import { createStore, produce } from 'solid-js/store'
+import { createSignal, createStore } from 'solid-js'
 import { numpy as np, tree } from '@jax-js/jax'
 import { fetchMnistRaw, type MnistFetchProgress } from '../../lib/datasources/mnist'
 import { formatMnistForMlp, type MnistMlpDataset } from '../../lib/datasets/jax/mnist'
@@ -104,29 +103,36 @@ export function createDamStore() {
 
     async function initialize(): Promise<void> {
         try {
-            setState({
-                isLoading: true,
-                loadingMessage: 'Initializing jax-js...',
-                loadingProgress: 0,
-                error: null,
+            setState(s => {
+                s.isLoading = true
+                s.loadingMessage = 'Initializing jax-js...'
+                s.loadingProgress = 0
+                s.error = null
             })
             const dev = await initJax()
-            setState({ device: dev, loadingMessage: 'Loading MNIST...' })
+            setState(s => {
+                s.device = dev
+                s.loadingMessage = 'Loading MNIST...'
+            })
 
             const raw = await fetchMnistRaw({
                 onProgress(p: MnistFetchProgress) {
-                    setState({
-                        loadingMessage: `${p.stage} ${p.file} (${p.completedFiles}/${p.totalFiles})`,
-                        loadingProgress: p.totalFiles > 0 ? p.completedFiles / p.totalFiles : 0,
+                    setState(s => {
+                        s.loadingMessage = `${p.stage} ${p.file} (${p.completedFiles}/${p.totalFiles})`
+                        s.loadingProgress = p.totalFiles > 0 ? p.completedFiles / p.totalFiles : 0
                     })
                 },
             })
             dataset = formatMnistForMlp(raw)
-            setState({ isLoading: false, loadingMessage: 'Ready', loadingProgress: 1 })
+            setState(s => {
+                s.isLoading = false
+                s.loadingMessage = 'Ready'
+                s.loadingProgress = 1
+            })
         } catch (err) {
-            setState({
-                isLoading: false,
-                error: err instanceof Error ? err.message : 'Failed to initialize',
+            setState(s => {
+                s.isLoading = false
+                s.error = err instanceof Error ? err.message : 'Failed to initialize'
             })
         }
     }
@@ -141,14 +147,14 @@ export function createDamStore() {
         const lr = learningRate()
         const BATCH_SIZE = Math.min(512, M)
 
-        setState({
-            isTraining: true,
-            trainLosses: [],
-            trainEpochsDone: 0,
-            error: null,
-            basicMemoryImages: [],
-            recallFrames: [],
-            currentRecallStep: 0,
+        setState(s => {
+            s.isTraining = true
+            s.trainLosses = []
+            s.trainEpochsDone = 0
+            s.error = null
+            s.basicMemoryImages = []
+            s.recallFrames = []
+            s.currentRecallStep = 0
         })
 
         // Build memory array (CPU-side, no GPU tensor for the full set)
@@ -159,7 +165,10 @@ export function createDamStore() {
             memoryImages.set(dataset.train.images.subarray(srcStart, srcStart + Nv), i * Nv)
             labels[i] = dataset.train.labels[i]
         }
-        setState({ numMemoriesStored: M, memoryLabels: Array.from(labels) })
+        setState(s => {
+            s.numMemoriesStored = M
+            s.memoryLabels = Array.from(labels)
+        })
 
         // Init params & optimizer
         if (trainParams) tree.dispose(trainParams)
@@ -202,12 +211,12 @@ export function createDamStore() {
                     xiData = tempXi 
                 }
 
-                setState(produce(s => {
+                setState(s => {
                     s.trainLosses.push(result.loss)
                     s.trainEpochsDone = epoch + 1
                     if (basics) s.basicMemoryImages = basics
                     if (partialTheta !== undefined) s.learnedTheta = partialTheta
-                }))
+                })
 
                 // Yield to UI thread periodically
                 if (epoch % 5 === 0) {
@@ -218,18 +227,26 @@ export function createDamStore() {
             // Extract results
             xiData = new Float32Array(await trainParams.xi.ref.data() as ArrayLike<number>)
             const theta = (await trainParams.theta.ref.jsAsync() as number[])[0]
-            setState({ learnedTheta: theta })
+            setState(s => {
+                s.learnedTheta = theta
+            })
 
             // Extract basic memories
             const basics: Float32Array[] = []
             for (let mu = 0; mu < Nh; mu++) {
                 basics.push(extractBasicMemory(xiData, Nv, Nh, mu))
             }
-            setState({ basicMemoryImages: basics })
+            setState(s => {
+                s.basicMemoryImages = basics
+            })
         } catch (err) {
-            setState({ error: err instanceof Error ? err.message : 'Training failed' })
+            setState(s => {
+                s.error = err instanceof Error ? err.message : 'Training failed'
+            })
         } finally {
-            setState({ isTraining: false })
+            setState(s => {
+                s.isTraining = false
+            })
         }
     }
 
@@ -252,19 +269,19 @@ export function createDamStore() {
         const rng = createSeededRng(idx + 1000)
         const noisyCue = addNoise(originalImg, noise, rng)
 
-        setState({
-            selectedCueIndex: idx,
-            originalImage: originalImg,
-            noisyCueImage: noisyCue,
-            cueImage: new Float32Array(noisyCue),
-            isRecalling: true,
-            recallFrames: [],
-            currentRecallStep: 0,
+        setState(s => {
+            s.selectedCueIndex = idx
+            s.originalImage = originalImg
+            s.noisyCueImage = noisyCue
+            s.cueImage = new Float32Array(noisyCue)
+            s.isRecalling = true
+            s.recallFrames = []
+            s.currentRecallStep = 0
         })
 
         // Use configurable recall threshold, default to learned theta
         const theta = recallTheta() ?? state.learnedTheta
-        let v = new Float32Array(noisyCue)
+        let v: Float32Array = new Float32Array(noisyCue)
 
         // Store frame 0 (the noisy cue)
         const frame0: RecallFrame = {
@@ -280,7 +297,7 @@ export function createDamStore() {
 
         for (let step = 1; step <= steps; step++) {
             const result = recallStep(xiData, theta, v, Nv, Nh, ratio, recallBeta())
-            v = result.v as any
+            v = result.v
             frames.push({
                 visible: new Float32Array(result.v),
                 hBinary: new Float32Array(result.hBinary),
@@ -291,16 +308,18 @@ export function createDamStore() {
             })
         }
 
-        setState({
-            recallFrames: frames,
-            currentRecallStep: frames.length - 1,
-            isRecalling: false,
+        setState(s => {
+            s.recallFrames = frames
+            s.currentRecallStep = frames.length - 1
+            s.isRecalling = false
         })
     }
 
     function setCurrentStep(step: number) {
         const maxStep = state.recallFrames.length - 1
-        setState({ currentRecallStep: Math.max(0, Math.min(step, maxStep)) })
+        setState(s => {
+            s.currentRecallStep = Math.max(0, Math.min(step, maxStep))
+        })
     }
 
     function getMemoryPixels(idx: number): Float32Array {

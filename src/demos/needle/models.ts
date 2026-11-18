@@ -140,7 +140,7 @@ export function makeNeedleSourceTokens(
     toolsJson: string,
     config: NeedleConfig = NEEDLE_26M_CONFIG,
     tokenizer: NeedleTokenizer | null = null
-): Int32Array {
+): Int32Array<ArrayBuffer> {
     const queryTokens = tokenizeText(query, config.vocabSize, 120, tokenizer)
     const toolsTokens = tokenizeText(normalizeNeedleToolsJson(toolsJson), config.vocabSize, 360, tokenizer)
     const merged = [...queryTokens, config.toolsTokenId, ...toolsTokens].slice(0, 512)
@@ -152,7 +152,7 @@ export function makeNeedleTargetTokens(
     config: NeedleConfig = NEEDLE_26M_CONFIG,
     generatedTokens: readonly number[] = [],
     tokenizer: NeedleTokenizer | null = null
-): Int32Array {
+): Int32Array<ArrayBuffer> {
     const prefixTokens = tokenizeText(prefix, config.vocabSize, 96, tokenizer)
     const generated = generatedTokens
         .map((token) => Math.trunc(token))
@@ -375,8 +375,8 @@ export function disposeNeedleParams(params: NeedleParams | null) {
 
 export async function runNeedleProbe(
     params: NeedleParams,
-    srcTokens: Int32Array,
-    tgtTokens: Int32Array,
+    srcTokens: Int32Array<ArrayBuffer>,
+    tgtTokens: Int32Array<ArrayBuffer>,
     config: NeedleConfig = NEEDLE_26M_CONFIG,
     options: NeedleProbeOptions = {}
 ): Promise<NeedleProbeResult> {
@@ -874,13 +874,13 @@ function topK(values: number[], k: number): Array<{ index: number; value: number
         .slice(0, k)
 }
 
-function decodeTensorValues(buffer: ArrayBuffer, dtype: NeedleTensorManifest['tensors'][string]['dtype']): Float32Array {
+function decodeTensorValues(buffer: ArrayBuffer, dtype: NeedleTensorManifest['tensors'][string]['dtype']): Float32Array<ArrayBuffer> {
     if (dtype === 'float16') return float16ToFloat32(new Uint16Array(buffer))
     if (dtype === 'bfloat16') return bfloat16ToFloat32(new Uint16Array(buffer))
     return new Float32Array(buffer)
 }
 
-function float16ToFloat32(input: Uint16Array): Float32Array {
+function float16ToFloat32(input: Uint16Array): Float32Array<ArrayBuffer> {
     const out = new Float32Array(input.length)
     for (let i = 0; i < input.length; i++) {
         const h = input[i]
@@ -898,7 +898,7 @@ function float16ToFloat32(input: Uint16Array): Float32Array {
     return out
 }
 
-function bfloat16ToFloat32(input: Uint16Array): Float32Array {
+function bfloat16ToFloat32(input: Uint16Array): Float32Array<ArrayBuffer> {
     const out = new Float32Array(input.length)
     const view = new DataView(out.buffer)
     for (let i = 0; i < input.length; i++) {

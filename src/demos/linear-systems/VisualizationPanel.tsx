@@ -1,12 +1,12 @@
 import { For, createEffect, createMemo } from 'solid-js'
-import { simulationStore } from './store'
+import { useSimulationStore } from './store'
 
 export function VisualizationPanel() {
-    const { state } = simulationStore
+    const { state } = useSimulationStore()
     let containerRef: HTMLDivElement | undefined
 
-    createEffect(() => {
-        if (state.history.length > 0 && containerRef) {
+    createEffect(() => state.history.length, length => {
+        if (length > 0 && containerRef) {
             containerRef.scrollLeft = containerRef.scrollWidth
         }
     })
@@ -61,15 +61,15 @@ export function VisualizationPanel() {
                                     </div>
                                     <For each={state.history}>
                                         {(colData, colIdx) => {
-                                            const val = colData[rowIdx()]
+                                            const val = () => colData[rowIdx()]
                                             return (
                                                 <div
                                                     class="h-full aspect-square shrink-0 border border-black/10 transition-colors"
                                                     style={{
-                                                        'background-color': getColor(val),
+                                                        'background-color': getColor(val()),
                                                         'border-radius': '3px 4px 2px 3px' // slight wobble feeling for tiny rects is tough, but slight varied radius helps
                                                     }}
-                                                    title={`Step ${colIdx()}, Node ${rowIdx()}: ${val.toFixed(2)}`}
+                                                    title={`Step ${colIdx()}, Node ${rowIdx()}: ${val().toFixed(2)}`}
                                                 />
                                             )
                                         }}

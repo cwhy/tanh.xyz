@@ -1,4 +1,5 @@
-import { For, Show, createMemo, createSignal, onCleanup, onMount, type JSX } from 'solid-js'
+import { For, Show, createMemo, createSignal, onSettled } from 'solid-js'
+import type { JSX } from '@solidjs/web'
 
 export interface LossPlotPoint {
     x: number
@@ -36,12 +37,12 @@ export function LossPlot(props: LossPlotProps): JSX.Element {
         }
     }
 
-    onMount(() => {
+    onSettled(() => {
         updateSize()
         if (typeof ResizeObserver === 'undefined' || !svgRef) return
         const observer = new ResizeObserver(() => updateSize())
         observer.observe(svgRef)
-        onCleanup(() => observer.disconnect())
+        return () => observer.disconnect()
     })
 
     const xMax = () => Math.max(1, props.xMax, props.points[props.points.length - 1]?.x ?? 1)

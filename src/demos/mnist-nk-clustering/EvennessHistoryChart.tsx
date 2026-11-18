@@ -1,4 +1,5 @@
-import { createEffect, type JSX } from 'solid-js'
+import { For, createEffect } from 'solid-js'
+import type { JSX } from '@solidjs/web'
 import type { EvennessSnapshot } from './store'
 
 // ---------------------------------------------------------------------------
@@ -24,12 +25,10 @@ export function EvennessHistoryChart(props: {
     const w = () => props.width ?? 640
     const h = () => props.height ?? 340
 
-    createEffect(() => {
-        const data = props.history
-        const width = w()
-        const height = h()
-        drawChart(canvasRef, data, width, height)
-    })
+    createEffect(
+        () => ({ data: props.history.map(point => ({ ...point })), width: w(), height: h() }),
+        ({ data, width, height }) => drawChart(canvasRef, data, width, height),
+    )
 
     return (
         <div class="flex flex-col items-center gap-3">
@@ -39,7 +38,7 @@ export function EvennessHistoryChart(props: {
             />
             {/* Legend */}
             <div class="flex gap-5 text-xs" style={{ 'font-family': "'Inter', sans-serif" }}>
-                {SERIES.map(s => (
+                <For each={SERIES}>{s => (
                     <div class="flex items-center gap-1.5">
                         <div
                             class="w-3 h-0.5 rounded-full"
@@ -47,7 +46,7 @@ export function EvennessHistoryChart(props: {
                         />
                         <span style={{ color: s.color, 'font-weight': 600 }}>{s.label}</span>
                     </div>
-                ))}
+                )}</For>
             </div>
         </div>
     )

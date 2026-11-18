@@ -3,8 +3,7 @@
  * Manages streaming points and clustering state
  */
 
-import { createSignal } from 'solid-js'
-import { createStore, produce } from 'solid-js/store'
+import { createSignal, flush, untrack, createStore } from 'solid-js'
 import {
     createNKClusteringState,
     addPoint,
@@ -85,7 +84,10 @@ export function createNKClusteringStore(): NKClusteringStore {
     const [last1ShrinkEnabled, setLast1ShrinkEnabled] = createSignal(false)
 
     // Validate K < N when setting
+    // These imperative algorithms consume committed UI inputs. Flush at action boundaries
+    // before reading a value changed by an earlier action in the same event.
     const setN = (newN: number) => {
+        flush()
         if (newN <= k()) {
             setKInternal(Math.max(1, newN - 1))
         }
@@ -94,6 +96,7 @@ export function createNKClusteringStore(): NKClusteringStore {
     }
 
     const setK = (newK: number) => {
+        flush()
         if (newK >= n()) {
             setNInternal(newK + 1)
         }
@@ -102,16 +105,17 @@ export function createNKClusteringStore(): NKClusteringStore {
     }
 
     const setCenterType = (type: CenterType) => {
+        flush()
         setCenterTypeInternal(type)
         reinitState()
     }
 
     // Clustering state
-    // eslint-disable-next-line solid/reactivity
-    let clusteringState = createNKClusteringState(n(), k(), centerType(), top1Enabled(), last1ShrinkEnabled())
+    let clusteringState = untrack(() => createNKClusteringState(n(), k(), centerType(), top1Enabled(), last1ShrinkEnabled()))
 
     // Reinitialize state when params change
     function reinitState() {
+        flush()
         clusteringState = createNKClusteringState(
             n(),
             k(),
@@ -119,14 +123,14 @@ export function createNKClusteringStore(): NKClusteringStore {
             top1Enabled(),
             last1ShrinkEnabled()
         )
-        setState({
-            points: [],
-            clusters: [],
-            currentPointIndex: 0,
-            lastAddedPointId: null,
-            lastEvictedPointId: null,
-            replayQueue: [],
-            nextReplayQueue: [],
+        setState(s => {
+            s.points = []
+            s.clusters = []
+            s.currentPointIndex = 0
+            s.lastAddedPointId = null
+            s.lastEvictedPointId = null
+            s.replayQueue = []
+            s.nextReplayQueue = []
         })
     }
 
@@ -193,9 +197,9 @@ export function createNKClusteringStore(): NKClusteringStore {
             color: oklchToCss(getClusterColor(c.id)),
         }))
 
-        setState({
-            points: pointsWithCluster,
-            clusters: clusterInfos,
+        setState(s => {
+            s.points = pointsWithCluster
+            s.clusters = clusterInfos
         })
     }
 
@@ -203,6 +207,7 @@ export function createNKClusteringStore(): NKClusteringStore {
      * Generate random points for streaming
      */
     function generateRandomPoints(count: number, distribution: BasicDatasetDistribution) {
+        flush()
         stopStreaming()
         resetState(clusteringState)
         clusteringState = createNKClusteringState(
@@ -221,15 +226,15 @@ export function createNKClusteringStore(): NKClusteringStore {
                 ;[points[i], points[j]] = [points[j], points[i]]
         }
 
-        setState({
-            pendingPoints: points,
-            currentPointIndex: 0,
-            points: [],
-            clusters: [],
-            lastAddedPointId: null,
-            lastEvictedPointId: null,
-            replayQueue: [],
-            nextReplayQueue: [],
+        setState(s => {
+            s.pendingPoints = points
+            s.currentPointIndex = 0
+            s.points = []
+            s.clusters = []
+            s.lastAddedPointId = null
+            s.lastEvictedPointId = null
+            s.replayQueue = []
+            s.nextReplayQueue = []
         })
     }
 
@@ -237,12 +242,13 @@ export function createNKClusteringStore(): NKClusteringStore {
      * If we're done with current replay round, advance to the next one.
      */
     function advanceReplayRoundIfNeeded() {
+        flush()
         const hasMorePending = state.currentPointIndex < state.pendingPoints.length
         if (!hasMorePending && state.replayQueue.length === 0 && state.nextReplayQueue.length > 0) {
-            setState(produce(s => {
+            setState(s => {
                 s.replayQueue = [...s.nextReplayQueue]
                 s.nextReplayQueue = []
-            }))
+            })
         }
     }
 
@@ -250,7 +256,9 @@ export function createNKClusteringStore(): NKClusteringStore {
      * Add a single point from pending queue or replay queue
      */
     function stepOnce(): AddPointResult | null {
+        flush()
         advanceReplayRoundIfNeeded()
+        flush()
 
         const hasMorePending = state.currentPointIndex < state.pendingPoints.length
         const hasReplayItems = state.replayQueue.length > 0
@@ -269,7 +277,7 @@ export function createNKClusteringStore(): NKClusteringStore {
             const { x, y } = state.pendingPoints[state.currentPointIndex]
             result = addPoint(clusteringState, x, y, cancelReplay())
 
-            setState(produce(s => {
+            setState(s => {
                 s.currentPointIndex++
                 s.lastAddedPointId = result.point.id
                 s.lastEvictedPointId = result.evicted?.id ?? null
@@ -277,13 +285,13 @@ export function createNKClusteringStore(): NKClusteringStore {
                 if (cancelReplay() && result.evicted) {
                     s.replayQueue.push({ x: result.evicted.x, y: result.evicted.y })
                 }
-            }))
+            })
         } else {
             // Process replay queue (after all original points are done)
             const replayPoint = state.replayQueue[0]
             result = addPoint(clusteringState, replayPoint.x, replayPoint.y, cancelReplay())
 
-            setState(produce(s => {
+            setState(s => {
                 s.replayQueue.shift()  // Remove processed replay item
                 s.lastAddedPointId = result.point.id
                 s.lastEvictedPointId = result.evicted?.id ?? null
@@ -291,7 +299,7 @@ export function createNKClusteringStore(): NKClusteringStore {
                 if (cancelReplay() && result.evicted) {
                     s.nextReplayQueue.push({ x: result.evicted.x, y: result.evicted.y })
                 }
-            }))
+            })
         }
 
         // Move to the next replay round once current replay queue is exhausted.
@@ -304,10 +312,11 @@ export function createNKClusteringStore(): NKClusteringStore {
      * Add a point directly (for click-to-add)
      */
     function addSinglePoint(x: number, y: number): AddPointResult {
+        flush()
         const result = addPoint(clusteringState, x, y)
-        setState({
-            lastAddedPointId: result.point.id,
-            lastEvictedPointId: result.evicted?.id ?? null,
+        setState(s => {
+            s.lastAddedPointId = result.point.id
+            s.lastEvictedPointId = result.evicted?.id ?? null
         })
         syncState()
         return result
@@ -317,12 +326,15 @@ export function createNKClusteringStore(): NKClusteringStore {
      * Start streaming points
      */
     function startStreaming() {
+        flush()
         if (streamingInterval) return
         const hasMorePending = state.currentPointIndex < state.pendingPoints.length
         const hasReplayItems = state.replayQueue.length > 0 || state.nextReplayQueue.length > 0
         if (!hasMorePending && !hasReplayItems) return
 
-        setState({ isStreaming: true })
+        setState(s => {
+            s.isStreaming = true
+        })
         streamingInterval = setInterval(() => {
             const result = stepOnce()
             if (!result) {
@@ -339,13 +351,16 @@ export function createNKClusteringStore(): NKClusteringStore {
             clearInterval(streamingInterval)
             streamingInterval = null
         }
-        setState({ isStreaming: false })
+        setState(s => {
+            s.isStreaming = false
+        })
     }
 
     /**
      * Reset everything
      */
     function reset() {
+        flush()
         stopStreaming()
         clusteringState = createNKClusteringState(
             n(),
@@ -354,15 +369,15 @@ export function createNKClusteringStore(): NKClusteringStore {
             top1Enabled(),
             last1ShrinkEnabled()
         )
-        setState({
-            points: [],
-            clusters: [],
-            pendingPoints: [],
-            currentPointIndex: 0,
-            lastAddedPointId: null,
-            lastEvictedPointId: null,
-            replayQueue: [],
-            nextReplayQueue: [],
+        setState(s => {
+            s.points = []
+            s.clusters = []
+            s.pendingPoints = []
+            s.currentPointIndex = 0
+            s.lastAddedPointId = null
+            s.lastEvictedPointId = null
+            s.replayQueue = []
+            s.nextReplayQueue = []
         })
     }
 

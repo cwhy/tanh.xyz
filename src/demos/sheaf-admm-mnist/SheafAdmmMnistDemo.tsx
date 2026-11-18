@@ -1,5 +1,6 @@
-import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount, type JSX } from 'solid-js'
-import { Pause, Play, RotateCcw, StepForward } from 'lucide-solid'
+import { For, Show, createEffect, createMemo, createSignal, onSettled } from 'solid-js'
+import type { JSX } from '@solidjs/web'
+import { Pause, Play, RotateCcw, StepForward } from '@lucide/solid'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 import { MnistImage } from '../../components/mnist/MnistImage'
@@ -53,9 +54,9 @@ function edgeColor(normalizedMismatch: number): string {
 function Latex(props: { expr: string; displayMode?: boolean; class?: string }): JSX.Element {
     let ref!: HTMLSpanElement
 
-    createEffect(() => {
-        katex.render(props.expr, ref, {
-            displayMode: props.displayMode ?? false,
+    createEffect(() => ({ expr: props.expr, displayMode: props.displayMode ?? false }), ({ expr, displayMode }) => {
+        katex.render(expr, ref, {
+            displayMode,
             throwOnError: false,
             strict: false,
             output: 'mathml',
@@ -68,7 +69,7 @@ function Latex(props: { expr: string; displayMode?: boolean; class?: string }): 
 function Panel(props: { title?: string; children: JSX.Element; class?: string; bodyClass?: string }): JSX.Element {
     return (
         <section
-            class={`min-h-0 overflow-hidden border-2 border-[#2d2d2d] bg-white/70 ${props.class ?? ''}`}
+            class={["min-h-0 overflow-hidden border-2 border-[#2d2d2d] bg-white/70", props.class ?? '']}
             style={{
                 'border-radius': wobblyLarge,
                 'box-shadow': '2px 2px 0 rgba(45,45,45,0.08)',
@@ -99,7 +100,7 @@ function StatusRow(props: { label: string; value: JSX.Element | string; tone?: s
     return (
         <div class="grid grid-cols-[1fr_auto] items-baseline gap-3 text-[15px] leading-tight">
             <span>{props.label}</span>
-            <span class={`font-mono text-[17px] font-bold ${props.tone ?? ''}`}>{props.value}</span>
+            <span class={["font-mono text-[17px] font-bold", props.tone ?? '']}>{props.value}</span>
         </div>
     )
 }
@@ -613,7 +614,7 @@ function ResidualChart(props: { points: ResidualPoint[]; maxIterations: number; 
     const top = 48
     const bottom = 54
 
-    onMount(() => {
+    onSettled(() => {
         if (typeof ResizeObserver === 'undefined') return
         const resize = () => {
             setSize({
@@ -624,7 +625,7 @@ function ResidualChart(props: { points: ResidualPoint[]; maxIterations: number; 
         const observer = new ResizeObserver(resize)
         observer.observe(host)
         resize()
-        onCleanup(() => observer.disconnect())
+        return () => observer.disconnect()
     })
 
     const maxY = createMemo(() => Math.max(0.001, ...props.points.flatMap(point => [point.primal, point.consensus])))
@@ -729,8 +730,9 @@ export function SheafAdmmMnistDemo(): JSX.Element {
     const latest = createMemo(() => store.latest())
     const isComplete = createMemo(() => (latest()?.iteration ?? 0) >= store.maxIterations())
 
-    onMount(() => {
+    onSettled(() => {
         void store.initialize()
+        return store.stop
     })
 
     return (

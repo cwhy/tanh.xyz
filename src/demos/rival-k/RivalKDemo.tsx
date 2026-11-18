@@ -1,4 +1,4 @@
-import { For, Show, createSignal, onCleanup, onMount } from 'solid-js'
+import { For, Show, createSignal, onSettled } from 'solid-js'
 import { createRivalKStore } from './store'
 import type { BasicDatasetDistribution } from '../../lib/datasets/basic'
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
@@ -33,7 +33,7 @@ export function RivalKDemo() {
     const [plotSize, setPlotSize] = createSignal(canvasSize)
     let stageCanvasContainerRef: HTMLDivElement | undefined
 
-    onMount(() => {
+    onSettled(() => {
         const updatePlotSize = () => {
             if (!stageCanvasContainerRef) return
             const { clientWidth, clientHeight } = stageCanvasContainerRef
@@ -46,9 +46,7 @@ export function RivalKDemo() {
         const resizeObserver = new ResizeObserver(updatePlotSize)
         resizeObserver.observe(stageCanvasContainerRef!)
 
-        onCleanup(() => {
-            resizeObserver.disconnect()
-        })
+        return () => { resizeObserver.disconnect(); store.stopStreaming() }
     })
 
     function handleCanvasClick(e: MouseEvent) {
@@ -268,14 +266,12 @@ export function RivalKDemo() {
                         {/* K-th nearest neighbor distance circles */}
                         <For each={store.clusters()}>
                             {(c) => {
-                                if (c.medoidId === null || c.kNNDist === 0) return null
-                                const medoidState = store.points().find(p => p.point.id === c.medoidId)
-                                if (!medoidState) return null
+                                const medoidState = () => c.kNNDist > 0 && store.points().find(p => p.point.id === c.medoidId)
 
                                 return (
-                                    <circle
-                                        cx={medoidState.point.x * canvasSize}
-                                        cy={(1 - medoidState.point.y) * canvasSize}
+                                    <Show when={medoidState()}>{medoid => <circle
+                                        cx={medoid().point.x * canvasSize}
+                                        cy={(1 - medoid().point.y) * canvasSize}
                                         r={c.kNNDist * canvasSize}
                                         fill="none"
                                         stroke={c.color}
@@ -287,7 +283,7 @@ export function RivalKDemo() {
                                             'opacity': (selectedClusterId() === null || selectedClusterId() === c.id) ? 1 : 0.1,
                                             'transition': 'opacity 0.2s',
                                         }}
-                                    />
+                                    />}</Show>
                                 )
                             }}
                         </For>
@@ -360,7 +356,7 @@ export function RivalKDemo() {
                         </div>
                         <Show when={store.replayRoundTotal() > 0}>
                             <progress
-                                class={`progress w-full ${store.replayQueueLength() > 0 ? 'progress-warning' : 'progress-success'}`}
+                                class={["progress w-full", store.replayQueueLength() > 0 ? 'progress-warning' : 'progress-success']}
                                 value={store.replayRoundProcessed()}
                                 max={store.replayRoundTotal()}
                             />
@@ -390,25 +386,23 @@ export function RivalKDemo() {
                         <For each={store.clusters()}>
                             {(cluster) => {
                                 const badge = () => maturityBadge[cluster.maturity]
-                                const minEvenness = Math.min(...store.clusters().filter(c => c.size > 1).map(c => c.evenness))
-                                const isWorst = cluster.size > 1 && cluster.evenness === minEvenness && minEvenness < 1
-                                const isSelected = selectedClusterId() === cluster.id
+                                const minEvenness = () => Math.min(...store.clusters().filter(c => c.size > 1).map(c => c.evenness))
+                                const isWorst = () => cluster.size > 1 && cluster.evenness === minEvenness() && minEvenness() < 1
+                                const isSelected = () => selectedClusterId() === cluster.id
 
                                 return (
                                     <span
-                                        class={`flex items-center gap-2 px-2 py-1 rounded-lg border cursor-pointer select-none transition-colors ${isSelected ? 'ring ring-primary ring-offset-1 ring-offset-base-300 ' : ''
-                                            }${isWorst ? 'border-error bg-error/10' : 'border-base-content/5 bg-base-300/50 hover:bg-base-300'
-                                            }`}
+                                        class={["flex items-center gap-2 px-2 py-1 rounded-lg border cursor-pointer select-none transition-colors", isSelected() ? 'ring ring-primary ring-offset-1 ring-offset-base-300 ' : '', isWorst() ? 'border-error bg-error/10' : 'border-base-content/5 bg-base-300/50 hover:bg-base-300']}
                                         onClick={() => setSelectedClusterId(prev => prev === cluster.id ? null : cluster.id)}
                                     >
                                         <span class="w-4 h-4 rounded-full" style={{ 'background-color': cluster.color }} />
                                         <span class="text-base-content/70">
                                             C{cluster.id} ({cluster.size})
                                         </span>
-                                        <span class={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${badge().bg} ${badge().text}`}>
+                                        <span class={["text-[10px] font-bold px-1.5 py-0.5 rounded-full border", badge().bg, badge().text]}>
                                             {badge().label}
                                         </span>
-                                        <span class={`text-[10px] font-mono ${isWorst ? 'text-error font-bold' : 'text-base-content/50'}`}>
+                                        <span class={["text-[10px] font-mono", isWorst() ? 'text-error font-bold' : 'text-base-content/50']}>
                                             even {cluster.evenness.toFixed(2)}
                                         </span>
                                     </span>

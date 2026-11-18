@@ -6,7 +6,7 @@
  * 
  * Route: /demo/dam-test
  */
-import { onMount } from 'solid-js'
+import { onSettled } from 'solid-js'
 import { numpy as np, tree } from '@jax-js/jax'
 import { fetchMnistRaw, type MnistFetchProgress } from '../../lib/datasources/mnist'
 import { formatMnistForMlp } from '../../lib/datasets/jax/mnist'
@@ -170,14 +170,14 @@ async function runTests() {
     log('MSE(noisy cue, original)', mse(noisyCue, testImage).toFixed(6))
 
     // Run recall
-    let v = new Float32Array(noisyCue)
+    let v: Float32Array = new Float32Array(noisyCue)
     const TAU_RATIO = 10
     const RECALL_STEPS = 20
 
     const recallMSEs: number[] = []
     for (let step = 0; step < RECALL_STEPS; step++) {
         const result = recallStep(xiData, thetaFinal, v, Nv, Nh, TAU_RATIO)
-        v = result.v as any
+        v = result.v
         const currentMSE = mse(v, testImage)
         recallMSEs.push(currentMSE)
 
@@ -203,11 +203,11 @@ async function runTests() {
 
     // ── Test 9: Recall from clean cue ──────────────────────────────────
     logSection('Test 9: Recall from clean cue (no noise)')
-    let vClean = new Float32Array(testImage)
+    let vClean: Float32Array = new Float32Array(testImage)
 
     for (let step = 0; step < RECALL_STEPS; step++) {
         const result = recallStep(xiData, thetaFinal, vClean, Nv, Nh, TAU_RATIO)
-        vClean = result.v as any
+        vClean = result.v
 
         if (step % 5 === 0 || step === RECALL_STEPS - 1) {
             const currentMSE = mse(vClean, testImage)
@@ -227,10 +227,10 @@ async function runTests() {
         const noisySrc = addNoise(src, 0.5, createSeededRng(idx + 100))
         const noiseMSEi = mse(noisySrc, src)
 
-        let vR = new Float32Array(noisySrc)
+        let vR: Float32Array = new Float32Array(noisySrc)
         for (let step = 0; step < RECALL_STEPS; step++) {
             const result = recallStep(xiData, thetaFinal, vR, Nv, Nh, TAU_RATIO)
-            vR = result.v as any
+            vR = result.v
         }
         const finalMSE = mse(vR, src)
         const label = memoryLabels[idx]
@@ -245,7 +245,7 @@ async function runTests() {
 }
 
 export function DamTestPage() {
-    onMount(() => {
+    onSettled(() => {
         console.log('[DAM-TEST] Starting Dense Associative Memory tests...')
         void runTests().catch(err => {
             console.error('[DAM-TEST] Test failed with error:', err)

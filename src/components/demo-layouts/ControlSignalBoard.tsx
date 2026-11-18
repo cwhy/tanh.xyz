@@ -1,6 +1,5 @@
-import type { JSX } from 'solid-js'
-import { createSignal, onCleanup, onMount } from 'solid-js'
-import { isServer } from 'solid-js/web'
+import type { JSX } from '@solidjs/web'
+import { createSignal, untrack, onSettled } from 'solid-js'
 
 interface ControlSignalBoardProps {
     title: string
@@ -13,7 +12,7 @@ interface ControlSignalBoardProps {
 }
 
 export function ControlSignalBoard(props: ControlSignalBoardProps): JSX.Element {
-    const [topHeight, setTopHeight] = createSignal(props.initialTopHeightVh ?? 50)
+    const [topHeight, setTopHeight] = createSignal(untrack(() => props.initialTopHeightVh ?? 50))
     let isDragging = false
 
     const handlePointerDown = (e: PointerEvent) => {
@@ -35,17 +34,13 @@ export function ControlSignalBoard(props: ControlSignalBoardProps): JSX.Element 
         }
     }
 
-    onMount(() => {
-        if (!isServer) {
-            window.addEventListener('pointermove', handlePointerMove)
-            window.addEventListener('pointerup', handlePointerUp)
-        }
-    })
-
-    onCleanup(() => {
-        if (!isServer) {
+    onSettled(() => {
+        window.addEventListener('pointermove', handlePointerMove)
+        window.addEventListener('pointerup', handlePointerUp)
+        return () => {
             window.removeEventListener('pointermove', handlePointerMove)
             window.removeEventListener('pointerup', handlePointerUp)
+            handlePointerUp()
         }
     })
 

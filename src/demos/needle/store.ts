@@ -1,5 +1,4 @@
-import { createSignal } from 'solid-js'
-import { createStore } from 'solid-js/store'
+import { createSignal, createStore } from 'solid-js'
 import {
     DEFAULT_NEEDLE_MANIFEST_URL,
     NEEDLE_26M_CONFIG,
@@ -96,22 +95,35 @@ export function createNeedleDemoStore() {
 
     async function initialize() {
         try {
-            setState({ isInitializing: true, error: null })
+            setState(s => {
+                s.isInitializing = true
+                s.error = null
+            })
             const device = await initJax()
-            setState({ isInitializing: false, device })
+            setState(s => {
+                s.isInitializing = false
+                s.device = device
+            })
 
             try {
                 const loadedTokenizer = await loadNeedleTokenizer()
                 setTokenizer(loadedTokenizer)
                 setVocabulary(loadedTokenizer.vocabulary)
-                setState({ tokenizerStatus: `Loaded real encoder (${loadedTokenizer.vocabulary.length.toLocaleString('en-US')} pieces)` })
+                setState(s => {
+                    s.tokenizerStatus = `Loaded real encoder (${loadedTokenizer.vocabulary.length.toLocaleString('en-US')} pieces)`
+                })
             } catch (vocabError) {
                 const message = vocabError instanceof Error ? vocabError.message : 'Failed to load Needle tokenizer'
-                setState({ tokenizerStatus: message })
+                setState(s => {
+                    s.tokenizerStatus = message
+                })
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to initialize jax-js'
-            setState({ isInitializing: false, error: message })
+            setState(s => {
+                s.isInitializing = false
+                s.error = message
+            })
         }
     }
 
@@ -120,15 +132,17 @@ export function createNeedleDemoStore() {
         const source = weightSource()
         const nextManifestUrl = manifestUrl().trim()
         if (source === 'manifest' && !nextManifestUrl) {
-            setState({ error: 'Set a manifest URL for R2 or another public origin first.' })
+            setState(s => {
+                s.error = 'Set a manifest URL for R2 or another public origin first.'
+            })
             return
         }
 
-        setState({
-            isLoadingWeights: true,
-            error: null,
-            lastProbe: null,
-            weightStatus: source === 'manifest' ? 'Fetching manifest and tensors...' : 'Allocating deterministic 26M-scale weights...',
+        setState(s => {
+            s.isLoadingWeights = true
+            s.error = null
+            s.lastProbe = null
+            s.weightStatus = source === 'manifest' ? 'Fetching manifest and tensors...' : 'Allocating deterministic 26M-scale weights...'
         })
         setGeneratedTokens([])
 
@@ -140,27 +154,33 @@ export function createNeedleDemoStore() {
                 const loaded = await loadNeedleParamsFromManifest(nextManifestUrl, config)
                 params = loaded.params
                 activeConfig = loaded.config
-                setState({
-                    activeSource: 'manifest',
-                    parameterCount: needleParamCount(activeConfig),
-                    estimatedBf16Mb: estimateParameterBytes(activeConfig, 2) / 1_000_000,
-                    weightStatus: 'Loaded converted Needle checkpoint tensors',
+                setState(s => {
+                    s.activeSource = 'manifest'
+                    s.parameterCount = needleParamCount(activeConfig)
+                    s.estimatedBf16Mb = estimateParameterBytes(activeConfig, 2) / 1_000_000
+                    s.weightStatus = 'Loaded converted Needle checkpoint tensors'
                 })
             } else {
                 activeConfig = config
                 params = initNeedleParams(seed(), activeConfig)
-                setState({
-                    activeSource: 'deterministic',
-                    parameterCount: needleParamCount(activeConfig),
-                    estimatedBf16Mb: estimateParameterBytes(activeConfig, 2) / 1_000_000,
-                    weightStatus: 'Loaded deterministic same-shape SAN weights',
+                setState(s => {
+                    s.activeSource = 'deterministic'
+                    s.parameterCount = needleParamCount(activeConfig)
+                    s.estimatedBf16Mb = estimateParameterBytes(activeConfig, 2) / 1_000_000
+                    s.weightStatus = 'Loaded deterministic same-shape SAN weights'
                 })
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to load Needle weights'
-            setState({ error: message, weightStatus: 'Weight load failed', activeSource: null })
+            setState(s => {
+                s.error = message
+                s.weightStatus = 'Weight load failed'
+                s.activeSource = null
+            })
         } finally {
-            setState({ isLoadingWeights: false })
+            setState(s => {
+                s.isLoadingWeights = false
+            })
         }
     }
 
@@ -173,7 +193,10 @@ export function createNeedleDemoStore() {
         }
 
         try {
-            setState({ isRunning: true, error: null })
+            setState(s => {
+                s.isRunning = true
+                s.error = null
+            })
             const srcTokens = makeNeedleSourceTokens(query(), toolsJson(), activeConfig, tokenizer())
             const tgtTokens = makeNeedleTargetTokens(decoderPrefix(), activeConfig, generatedTokens(), tokenizer())
             const allowedTokenIds = makeNeedleAllowedTokenIds(
@@ -184,19 +207,27 @@ export function createNeedleDemoStore() {
                 vocabulary()
             )
             const result = await runNeedleProbe(params, srcTokens, tgtTokens, activeConfig, { allowedTokenIds })
-            setState({ lastProbe: result })
+            setState(s => {
+                s.lastProbe = result
+            })
             setGeneratedTokens((tokens) => [...tokens, result.nextToken])
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Needle forward pass failed'
-            setState({ error: message })
+            setState(s => {
+                s.error = message
+            })
         } finally {
-            setState({ isRunning: false })
+            setState(s => {
+                s.isRunning = false
+            })
         }
     }
 
     function resetGeneratedTokens() {
         setGeneratedTokens([])
-        setState({ lastProbe: null })
+        setState(s => {
+            s.lastProbe = null
+        })
     }
 
     function setQueryInput(value: string) {

@@ -5,8 +5,8 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/solid-router'
 
-import { HydrationScript } from 'solid-js/web'
-import { Suspense } from 'solid-js'
+import { HydrationScript } from '@solidjs/web'
+import { Loading } from 'solid-js'
 
 import styleCss from '../styles.css?url'
 
@@ -55,9 +55,9 @@ function RootComponent() {
       </head>
       <body>
         <HeadContent />
-        <Suspense>
+        <Loading>
           <Outlet />
-        </Suspense>
+        </Loading>
         <Scripts />
       </body>
     </html>

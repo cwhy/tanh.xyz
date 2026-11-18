@@ -1,5 +1,4 @@
-import { batch } from 'solid-js'
-import { createStore, reconcile } from 'solid-js/store'
+import { createContext, createStore, useContext } from 'solid-js'
 import { generateMatrix, computeSparsity, stepSimulationJit, type MatrixType } from './math-utils'
 import { init, defaultDevice, numpy as np } from '@jax-js/jax'
 
@@ -44,15 +43,11 @@ export function createSimulationStore() {
         emaVar: 1
     })
 
-    // Previously we recomputed the entire history. Now normalization affects the *actual* state evolution,
-    // so we can't retroactively apply it to history. History is what actually happened.
-    const resetEmats = () => {
-        setState('emaMean', 0)
-        setState('emaVar', 1)
-    }
+    let disposed = false
 
     const initialize = async () => {
         const devices = await init()
+        if (disposed) return
         const selectedDevice = devices.includes('webgpu') ? 'webgpu' : devices[0]
         if (devices.includes('webgpu')) defaultDevice('webgpu')
 
@@ -61,68 +56,82 @@ export function createSimulationStore() {
         const x0 = Array(defaultN).fill(1).map(() => Math.random() * (defaultMax - defaultMin) + defaultMin)
         const sparsity = computeSparsity(W)
 
-        setState({
-            isLoading: false,
-            device: selectedDevice,
-            W: W,
-            x0: [...x0],
-            history: [[...x0]],
-            sparsity: sparsity,
+        setState(s => {
+            s.isLoading = false
+            s.device = selectedDevice
+            s.W = W
+            s.x0 = [...x0]
+            s.history = [[...x0]]
+            s.sparsity = sparsity
         })
     }
 
     const setN = (n: number) => {
-        if (n === state.N) return
-        batch(() => {
-            setState('N', n)
-            // Resize W and x0
-            const W = generateMatrix(state.matrixType, n, state.globalMin, state.globalMax)
-            const x0 = Array(n).fill(1).map(() => Math.random() * (state.globalMax - state.globalMin) + state.globalMin)
-            const sparsity = computeSparsity(W)
-
-            setState({ W, x0, history: [[...x0]], sparsity, isPlaying: false })
+        setState(s => {
+            if (n === s.N) return
+            s.N = n
+            s.W = generateMatrix(s.matrixType, n, s.globalMin, s.globalMax)
+            s.x0 = Array.from({ length: n }, () => Math.random() * (s.globalMax - s.globalMin) + s.globalMin)
+            s.history = [[...s.x0]]
+            s.sparsity = computeSparsity(s.W)
+            s.isPlaying = false
         })
     }
 
     const setMatrixType = (type: MatrixType) => {
-        batch(() => {
-            setState('matrixType', type)
-            const W = generateMatrix(type, state.N, state.globalMin, state.globalMax)
-            const sparsity = computeSparsity(W)
-            setState({ W, sparsity, isPlaying: false, history: [[...state.x0]] })
+        setState(s => {
+            s.matrixType = type
+            s.W = generateMatrix(type, s.N, s.globalMin, s.globalMax)
+            s.sparsity = computeSparsity(s.W)
+            s.isPlaying = false
+            s.history = [[...s.x0]]
         })
     }
 
     const setMatrixValue = (r: number, c: number, value: number) => {
-        setState('W', r, c, Math.min(Math.max(value, state.globalMin), state.globalMax))
-        setState('sparsity', computeSparsity(state.W))
+        setState(s => {
+            s.W[r][c] = Math.min(Math.max(value, s.globalMin), s.globalMax)
+            s.sparsity = computeSparsity(s.W)
+        })
     }
 
     const setInitialStateValue = (idx: number, value: number) => {
-        setState('x0', idx, Math.min(Math.max(value, state.globalMin), state.globalMax))
+        setState(s => { s.x0[idx] = Math.min(Math.max(value, s.globalMin), s.globalMax) })
     }
 
     const randomizeInitialState = () => {
-        const newX0 = Array(state.N).fill(1).map(() => Math.random() * (state.globalMax - state.globalMin) + state.globalMin)
-        batch(() => {
-            setState('x0', newX0)
-            if (!state.isPlaying) {
-                resetEmats()
-                setState('history', reconcile([newX0]))
+        setState(s => {
+            s.x0 = Array.from({ length: s.N }, () => Math.random() * (s.globalMax - s.globalMin) + s.globalMin)
+            if (!s.isPlaying) {
+                s.emaMean = 0
+                s.emaVar = 1
+                s.history = [[...s.x0]]
             }
         })
     }
 
     const resetSimulation = () => {
-        resetEmats()
-        setState('history', reconcile([[...state.x0]]))
-        setState('isPlaying', false)
+        setState(s => {
+            s.emaMean = 0
+            s.emaVar = 1
+            s.history = [[...s.x0]]
+            s.isPlaying = false
+        })
     }
 
     let rafId: number | null = null
+    let timer: ReturnType<typeof setTimeout> | null = null
+
+    const dispose = () => {
+        disposed = true
+        if (rafId !== null) cancelAnimationFrame(rafId)
+        if (timer !== null) clearTimeout(timer)
+        rafId = null
+        timer = null
+    }
 
     const simulationLoop = async () => {
-        if (!state.isPlaying || state.isLoading) return
+        if (disposed || !state.isPlaying || state.isLoading) return
 
         const W_arr = np.array(state.W)
         const x_current = np.array(state.history[state.history.length - 1])
@@ -131,6 +140,7 @@ export function createSimulationStore() {
             const next_x = stepSimulationJit(x_current, W_arr)
             // get js value async
             const result = await next_x.jsAsync() as number[]
+            if (disposed || !state.isPlaying) return
 
             // Note: We are NO LONGER limiting bounds to globalMax/globalMin for the state evolution,
             // as requested by the user. Let it blow up or go to zero as linear systems normally do!
@@ -162,13 +172,14 @@ export function createSimulationStore() {
                 for (const v of boundedResult) variance += (v - mean) ** 2
                 variance /= boundedResult.length
 
-                setState('emaMean', m => 0.9 * m + 0.1 * mean)
-                setState('emaVar', v => 0.9 * v + 0.1 * variance)
+                const emaMean = 0.9 * state.emaMean + 0.1 * mean
+                const emaVar = 0.9 * state.emaVar + 0.1 * variance
+                setState(s => { s.emaMean = emaMean; s.emaVar = emaVar })
 
-                const std = Math.sqrt(state.emaVar) || 1
+                const std = Math.sqrt(emaVar) || 1
                 // Scale normalized value by maxAbs/3 so it fits roughly within global bounds
                 const scale = maxAbs / 3
-                normStep = boundedResult.map(v => ((v - state.emaMean) / std) * scale)
+                normStep = boundedResult.map(v => ((v - emaMean) / std) * scale)
             } else if (norm === 'softmax') {
                 const maxVal = Math.max(...boundedResult)
                 const exps = boundedResult.map(v => Math.exp(v - maxVal))
@@ -178,16 +189,17 @@ export function createSimulationStore() {
                 normStep = boundedResult.map(v => Math.tanh(v))
             }
 
-            setState('history', h => [...h, normStep])
+            setState(s => { s.history.push(normStep) })
         } catch (e) {
             console.error('Simulation error', e)
-            setState('isPlaying', false)
+            setState(s => { s.isPlaying = false })
             return
         }
 
         // Throttle simulation to roughly 10 steps per second
-        setTimeout(() => {
-            if (state.isPlaying) {
+        timer = setTimeout(() => {
+            timer = null
+            if (!disposed && state.isPlaying) {
                 rafId = requestAnimationFrame(simulationLoop)
             }
         }, 100)
@@ -195,7 +207,7 @@ export function createSimulationStore() {
 
     const togglePlaying = () => {
         const nextState = !state.isPlaying
-        setState('isPlaying', nextState)
+        setState(s => { s.isPlaying = nextState })
         if (nextState) {
             rafId = requestAnimationFrame(simulationLoop)
         } else if (rafId) {
@@ -205,21 +217,21 @@ export function createSimulationStore() {
     }
 
     const setGlobalBounds = (newMin: number, newMax: number) => {
-        batch(() => {
-            setState({ globalMin: newMin, globalMax: newMax })
+        setState(s => {
+            s.globalMin = newMin
+            s.globalMax = newMax
         })
     }
 
     const setStateNorm = (norm: StateNormType) => {
-        batch(() => {
-            setState('stateNorm', norm)
-            if (!state.isPlaying) resetSimulation()
-        })
+        setState(s => { s.stateNorm = norm })
+        if (!state.isPlaying) resetSimulation()
     }
 
     return {
         state,
         initialize,
+        dispose,
         setN,
         setMatrixType,
         setMatrixValue,
@@ -232,4 +244,5 @@ export function createSimulationStore() {
     }
 }
 
-export const simulationStore = createSimulationStore()
+export const SimulationContext = createContext<ReturnType<typeof createSimulationStore>>()
+export const useSimulationStore = () => useContext(SimulationContext)

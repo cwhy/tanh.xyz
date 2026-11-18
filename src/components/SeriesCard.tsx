@@ -1,5 +1,5 @@
 import { createSignal, For, Show } from 'solid-js'
-import { Portal } from 'solid-js/web'
+import { Portal } from '@solidjs/web'
 import { getCardVariantForTitle, getStackVariantForTitle, renderOuterDecorations, renderInnerDecorations } from './CardDecorations'
 
 interface SeriesDemo {
@@ -52,7 +52,7 @@ export function SeriesCard(props: SeriesCardProps) {
 
                 {/* Back cards (stack effect) using their own specific variations based on the hash */}
                 <div
-                    class={`${cardBaseClass} absolute cursor-pointer`}
+                    class={[cardBaseClass, "absolute cursor-pointer"]}
                     style={{
                         'border-radius': stack2().borderRadius,
                         transform: isHovered()
@@ -66,7 +66,7 @@ export function SeriesCard(props: SeriesCardProps) {
                     }}
                 />
                 <div
-                    class={`${cardBaseClass} absolute cursor-pointer`}
+                    class={[cardBaseClass, "absolute cursor-pointer"]}
                     style={{
                         'border-radius': stack1().borderRadius,
                         transform: isHovered()
@@ -82,7 +82,7 @@ export function SeriesCard(props: SeriesCardProps) {
 
                 {/* Front card */}
                 <div
-                    class={`${cardBaseClass} relative hover:shadow-[2px_2px_0px_0px_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] group overflow-hidden cursor-pointer bg-base-100 w-full block`}
+                    class={[cardBaseClass, "relative hover:shadow-[2px_2px_0px_0px_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] group overflow-hidden cursor-pointer bg-base-100 w-full block"]}
                     style={{
                         'border-radius': variant().borderRadius,
                         'aspect-ratio': '1.2 / 1'
@@ -166,7 +166,7 @@ export function SeriesCard(props: SeriesCardProps) {
                                         return (
                                             <a
                                                 href={demo.href}
-                                                class={`${cardBaseClass} hover:shadow-[2px_2px_0px_0px_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] group flex flex-row overflow-hidden`}
+                                                class={[cardBaseClass, "hover:shadow-[2px_2px_0px_0px_#2d2d2d] hover:translate-x-[2px] hover:translate-y-[2px] group flex flex-row overflow-hidden"]}
                                                 style={{ 'border-radius': demoVariant().borderRadius }}
                                             >
                                                 <Show when={demo.thumbnail}>

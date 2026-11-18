@@ -1,4 +1,4 @@
-import type { JSX } from 'solid-js'
+import type { JSX } from '@solidjs/web'
 
 interface ConfigSliderProps {
     label: string
@@ -23,14 +23,14 @@ export function ConfigSlider(props: ConfigSliderProps): JSX.Element {
 
     return (
         <div class="form-control">
-            <label class={`label ${isLabelInline() ? 'pb-2 flex justify-between items-center' : 'pb-1'}`}>
+            <label class={["label", isLabelInline() ? 'pb-2 flex justify-between items-center' : 'pb-1']}>
                 <span class="label-text font-medium">{props.label}</span>
                 {isLabelInline() && (
                     <span class={props.valueClass ?? 'label-text-alt font-mono'}>{valueText()}</span>
                 )}
             </label>
             {!isLabelInline() && (
-                <div class={`text-right text-xs mb-1 ${props.valueClass ?? 'text-base-content/60 font-mono'}`}>
+                <div class={["text-right text-xs mb-1", props.valueClass ?? 'text-base-content/60 font-mono']}>
                     {valueText()}
                 </div>
             )}

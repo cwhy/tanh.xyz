@@ -4,10 +4,8 @@ import viteTsConfigPaths from 'vite-tsconfig-paths'
 import tailwindcss from '@tailwindcss/vite'
 
 import { tanstackStart } from '@tanstack/solid-start/plugin/vite'
-import solidPlugin from 'vite-plugin-solid'
+import solidPlugin from '@solidjs/vite-plugin'
 import { nitro } from 'nitro/vite'
-
-import lucidePreprocess from 'vite-plugin-lucide-preprocess'
 
 export default defineConfig({
   ssr: {
@@ -18,7 +16,6 @@ export default defineConfig({
     ],
   },
   plugins: [
-    lucidePreprocess(),
     devtools(),
     nitro({
       preset: 'cloudflare-module',

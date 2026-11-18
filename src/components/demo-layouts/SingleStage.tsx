@@ -1,5 +1,6 @@
-import type { Component, JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
+import type { Component } from 'solid-js'
+import type { JSX } from '@solidjs/web'
+import { Dynamic } from '@solidjs/web'
 
 interface SingleStageLayoutProps {
     title: string
@@ -22,10 +23,10 @@ export function SingleStageLayout(props: SingleStageLayoutProps): JSX.Element {
                 'background-size': '24px 24px',
             }}
         >
-            <div class="h-screen w-full px-4 py-6 md:px-6 md:py-8">
+            <div class="min-h-screen lg:h-screen w-full px-4 py-6 md:px-6 md:py-8">
                 <div class="mx-auto flex h-full max-w-[1600px] min-h-0 flex-col">
-                    <div class="grid min-h-0 grow grid-cols-[minmax(280px,360px)_minmax(0,1fr)] gap-6">
-                        <aside class="h-full min-h-0 flex flex-col">
+                    <div class="grid min-h-0 grow grid-cols-1 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] gap-6">
+                        <aside class="lg:h-full min-h-0 flex flex-col">
                             <header class="shrink-0 pb-4">
                                 {props.backHref && (
                                     <a
@@ -58,7 +59,7 @@ export function SingleStageLayout(props: SingleStageLayoutProps): JSX.Element {
                                 <Dynamic component={props.config} />
                             </div>
                         </aside>
-                        <section class="h-full min-h-0"><Dynamic component={props.stage} /></section>
+                        <section class="min-h-[500px] lg:h-full lg:min-h-0"><Dynamic component={props.stage} /></section>
                     </div>
                 </div>
             </div>

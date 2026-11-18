@@ -1,5 +1,4 @@
-import { createSignal } from 'solid-js'
-import { createStore } from 'solid-js/store'
+import { createSignal, createStore } from 'solid-js'
 import { numpy as np, tree } from '@jax-js/jax'
 import { fetchMnistRaw, type MnistFetchProgress } from '../../lib/datasources/mnist'
 import { formatMnistForMlp, type MnistMlpDataset } from '../../lib/datasets/jax/mnist'
@@ -117,8 +116,8 @@ export function createMnistTrainingStore() {
     let testEvalX: np.Array | null = null
     let testEvalY: np.Array | null = null
 
-    let activeTrainImages: Float32Array | null = null
-    let activeTrainOneHot: Float32Array | null = null
+    let activeTrainImages: Float32Array<ArrayBuffer> | null = null
+    let activeTrainOneHot: Float32Array<ArrayBuffer> | null = null
     let activeTrainLabels: Int32Array | null = null
     let activeSourceIndices: Int32Array | null = null
 
@@ -149,41 +148,41 @@ export function createMnistTrainingStore() {
 
     async function initialize(): Promise<void> {
         try {
-            setState({
-                isLoading: true,
-                loadingMessage: 'Initializing jax-js...',
-                loadingProgress: 0,
-                error: null,
+            setState(s => {
+                s.isLoading = true
+                s.loadingMessage = 'Initializing jax-js...'
+                s.loadingProgress = 0
+                s.error = null
             })
 
             const dev = await initJax()
-            setState({
-                device: dev,
-                loadingMessage: 'Loading MNIST...',
+            setState(s => {
+                s.device = dev
+                s.loadingMessage = 'Loading MNIST...'
             })
 
             const raw = await fetchMnistRaw({
                 onProgress(progress) {
-                    setState({
-                        loadingMessage: setStageText(progress),
-                        loadingProgress: progress.totalFiles > 0
+                    setState(s => {
+                        s.loadingMessage = setStageText(progress)
+                        s.loadingProgress = progress.totalFiles > 0
                             ? progress.completedFiles / progress.totalFiles
-                            : 0,
+                            : 0
                     })
                 },
             })
             dataset = formatMnistForMlp(raw)
 
-            setState({
-                isLoading: false,
-                loadingMessage: 'MNIST loaded',
-                loadingProgress: 1,
+            setState(s => {
+                s.isLoading = false
+                s.loadingMessage = 'MNIST loaded'
+                s.loadingProgress = 1
             })
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to initialize MNIST demo'
-            setState({
-                isLoading: false,
-                error: message,
+            setState(s => {
+                s.isLoading = false
+                s.error = message
             })
         }
     }
@@ -233,23 +232,23 @@ export function createMnistTrainingStore() {
         solver = optimizer.solver
         optState = optimizer.optState
 
-        setState({
-            sampleBudget: budget,
-            totalSamplesTrained: 0,
-            latestSampleLoss: null,
-            trainLoss: null,
-            testLoss: null,
-            trainAccuracy: null,
-            testAccuracy: null,
-            testRecallByDigit: Array.from({ length: 10 }, () => 0),
-            lossCurve: [],
-            topSamplesAll: [],
-            topSamplesWindow: [],
-            error: null,
+        setState(s => {
+            s.sampleBudget = budget
+            s.totalSamplesTrained = 0
+            s.latestSampleLoss = null
+            s.trainLoss = null
+            s.testLoss = null
+            s.trainAccuracy = null
+            s.testAccuracy = null
+            s.testRecallByDigit = Array.from({ length: 10 }, () => 0)
+            s.lossCurve = []
+            s.topSamplesAll = []
+            s.topSamplesWindow = []
+            s.error = null
         })
     }
 
-    function getTrainImagePixels(trainPosition: number): Float32Array {
+    function getTrainImagePixels(trainPosition: number): Float32Array<ArrayBuffer> {
         if (!activeTrainImages) {
             return new Float32Array(PIXELS_PER_IMAGE)
         }
@@ -335,7 +334,9 @@ export function createMnistTrainingStore() {
     async function startTraining(): Promise<void> {
         if (state.isTraining || state.isLoading) return
         if (!dataset) {
-            setState({ error: 'Dataset is not ready yet' })
+            setState(s => {
+                s.error = 'Dataset is not ready yet'
+            })
             return
         }
 
@@ -344,23 +345,29 @@ export function createMnistTrainingStore() {
             buildTrainingSubset()
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to prepare training run'
-            setState({ error: message })
+            setState(s => {
+                s.error = message
+            })
             return
         }
 
         if (!params || !solver || !optState || !trainEvalX || !trainEvalY || !testEvalX || !testEvalY) {
-            setState({ error: 'Training was not properly initialized' })
+            setState(s => {
+                s.error = 'Training was not properly initialized'
+            })
             return
         }
         if (!activeTrainImages || !activeTrainOneHot || !activeTrainLabels || !activeSourceIndices) {
-            setState({ error: 'Training data is missing' })
+            setState(s => {
+                s.error = 'Training data is missing'
+            })
             return
         }
 
-        setState({
-            isTraining: true,
-            isStopping: false,
-            error: null,
+        setState(s => {
+            s.isTraining = true
+            s.isStopping = false
+            s.error = null
         })
         stopRequested = false
 
@@ -420,17 +427,17 @@ export function createMnistTrainingStore() {
                     localTopWindowLatest = await attachPredictions(localParams, localTopWindow)
                 }
 
-                setState({
-                    totalSamplesTrained: i + 1,
-                    latestSampleLoss: localLatestLoss,
-                    trainLoss,
-                    testLoss,
-                    trainAccuracy,
-                    testAccuracy,
-                    testRecallByDigit: testMetrics.recallByDigit,
-                    lossCurve: localCurve,
-                    topSamplesAll: localTopAll,
-                    topSamplesWindow: localTopWindowLatest,
+                setState(s => {
+                    s.totalSamplesTrained = i + 1
+                    s.latestSampleLoss = localLatestLoss
+                    s.trainLoss = trainLoss
+                    s.testLoss = testLoss
+                    s.trainAccuracy = trainAccuracy
+                    s.testAccuracy = testAccuracy
+                    s.testRecallByDigit = testMetrics.recallByDigit
+                    s.lossCurve = localCurve
+                    s.topSamplesAll = localTopAll
+                    s.topSamplesWindow = localTopWindowLatest
                 })
 
                 lastVizAt = now
@@ -440,9 +447,9 @@ export function createMnistTrainingStore() {
 
         params = localParams
         optState = localOptState
-        setState({
-            isTraining: false,
-            isStopping: false,
+        setState(s => {
+            s.isTraining = false
+            s.isStopping = false
         })
         stopRequested = false
     }
@@ -450,7 +457,9 @@ export function createMnistTrainingStore() {
     function stopTraining() {
         if (!state.isTraining) return
         stopRequested = true
-        setState({ isStopping: true })
+        setState(s => {
+            s.isStopping = true
+        })
     }
 
     function getDisplayedTopSamples(): GradientRankSample[] {

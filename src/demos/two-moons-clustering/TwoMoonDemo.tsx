@@ -1,4 +1,4 @@
-import { For, Show, onMount } from 'solid-js'
+import { For, Show, onSettled } from 'solid-js'
 import { createTrainingStore } from './training-store'
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
 import { ConfigRadioGroup } from '../../components/ui-parts/configs/ConfigRadioGroup'
@@ -34,7 +34,7 @@ export function TwoMoonDemo() {
         runTraining,
     } = store
 
-    onMount(() => store.initialize())
+    onSettled(() => { void store.initialize() })
 
     const canvasSize = 760
     const gridRes = 40
@@ -66,7 +66,7 @@ export function TwoMoonDemo() {
                 options={optimizerOptions}
                 onChange={(value) => {
                     setOptimizerType(value)
-                    reinitOptimizer()
+                    reinitOptimizer(value)
                 }}
                 controlsInline
                 disabled={state.isTraining || state.isLoading}

@@ -1,4 +1,4 @@
-import { For, Show, createMemo, onMount } from 'solid-js'
+import { For, Show, createMemo, onSettled } from 'solid-js'
 import { ConfigRadioGroup } from '../../components/ui-parts/configs/ConfigRadioGroup'
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
 import { SingleStageLayout } from '../../components/demo-layouts/SingleStage'
@@ -52,7 +52,7 @@ export function AdditionGrokkingDemo() {
         resetMlpDefaults,
     } = store
 
-    onMount(() => {
+    onSettled(() => {
         void initialize()
     })
 

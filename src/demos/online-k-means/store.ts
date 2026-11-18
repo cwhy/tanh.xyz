@@ -2,8 +2,7 @@
  * Store for Online Clustering demo — K-Means / Hard WTA / SoftHebb × Euclidean / Angular
  */
 
-import { createSignal } from 'solid-js'
-import { createStore, produce } from 'solid-js/store'
+import { createSignal, flush, untrack, createStore } from 'solid-js'
 import {
     createOnlineKMeansState,
     addPoint,
@@ -45,9 +44,23 @@ export function createOnlineKMeansStore() {
     const [learningRate, setLearningRateInternal] = createSignal(0.01)
     const [softmaxBase, setSoftmaxBaseInternal] = createSignal(Math.E)
 
-    const setK = (newK: number) => { setKInternal(newK); reinitState() }
-    const setAlgorithm = (v: AlgorithmType) => { setAlgorithmInternal(v); reinitState() }
-    const setDistanceMetric = (v: DistanceMetric) => { setDistanceMetricInternal(v); reinitState() }
+    // These imperative algorithms consume committed UI inputs. Flush at action boundaries
+    // before reading a value changed by an earlier action in the same event.
+    const setK = (newK: number) => {
+        flush()
+        setKInternal(newK)
+        reinitState()
+    }
+    const setAlgorithm = (v: AlgorithmType) => {
+        flush()
+        setAlgorithmInternal(v)
+        reinitState()
+    }
+    const setDistanceMetric = (v: DistanceMetric) => {
+        flush()
+        setDistanceMetricInternal(v)
+        reinitState()
+    }
 
     const setLearningRate = (v: number) => {
         setLearningRateInternal(v)
@@ -58,12 +71,18 @@ export function createOnlineKMeansStore() {
         if (clusteringState) clusteringState.softmaxBase = v
     }
 
-    // eslint-disable-next-line solid/reactivity
-    let clusteringState = createOnlineKMeansState(k(), algorithm(), distanceMetric(), learningRate(), softmaxBase())
+    let clusteringState = untrack(() => createOnlineKMeansState(k(), algorithm(), distanceMetric(), learningRate(), softmaxBase()))
 
     function reinitState() {
+        flush()
         clusteringState = createOnlineKMeansState(k(), algorithm(), distanceMetric(), learningRate(), softmaxBase())
-        setState({ points: [], clusters: [], angularBoundaries: [], currentPointIndex: 0, lastAddedPointId: null })
+        setState(s => {
+            s.points = []
+            s.clusters = []
+            s.angularBoundaries = []
+            s.currentPointIndex = 0
+            s.lastAddedPointId = null
+        })
     }
 
     const [state, setState] = createStore({
@@ -110,10 +129,15 @@ export function createOnlineKMeansStore() {
         })
 
         const boundaries = isAngular ? computeAngularBoundaries(clusteringState) : []
-        setState({ points: pointsWithCluster, clusters: clusterInfos, angularBoundaries: boundaries })
+        setState(s => {
+            s.points = pointsWithCluster
+            s.clusters = clusterInfos
+            s.angularBoundaries = boundaries
+        })
     }
 
     function generateRandomPoints(count: number, distribution: BasicDatasetDistribution) {
+        flush()
         stopStreaming()
         clusteringState = createOnlineKMeansState(k(), algorithm(), distanceMetric(), learningRate(), softmaxBase())
         const points = generateBasicDatasetPoints(count, distribution)
@@ -121,41 +145,65 @@ export function createOnlineKMeansStore() {
             const j = Math.floor(Math.random() * (i + 1))
                 ;[points[i], points[j]] = [points[j], points[i]]
         }
-        setState({ pendingPoints: points, currentPointIndex: 0, points: [], clusters: [], angularBoundaries: [], lastAddedPointId: null })
+        setState(s => {
+            s.pendingPoints = points
+            s.currentPointIndex = 0
+            s.points = []
+            s.clusters = []
+            s.angularBoundaries = []
+            s.lastAddedPointId = null
+        })
     }
 
     function stepOnce(): OnlineKMeansAddPointResult | null {
+        flush()
         if (state.currentPointIndex >= state.pendingPoints.length) { stopStreaming(); return null }
         const { x, y } = state.pendingPoints[state.currentPointIndex]
         const result = addPoint(clusteringState, x, y)
-        setState(produce(s => { s.currentPointIndex++; s.lastAddedPointId = result.point.id }))
+        setState(s => { s.currentPointIndex++; s.lastAddedPointId = result.point.id })
         syncState()
         return result
     }
 
     function addSinglePoint(x: number, y: number): OnlineKMeansAddPointResult {
+        flush()
         const result = addPoint(clusteringState, x, y)
-        setState({ lastAddedPointId: result.point.id })
+        setState(s => {
+            s.lastAddedPointId = result.point.id
+        })
         syncState()
         return result
     }
 
     function startStreaming() {
+        flush()
         if (streamingInterval) return
         if (state.currentPointIndex >= state.pendingPoints.length) return
-        setState({ isStreaming: true })
+        setState(s => {
+            s.isStreaming = true
+        })
         streamingInterval = setInterval(() => { if (!stepOnce()) stopStreaming() }, streamSpeed())
     }
 
     function stopStreaming() {
         if (streamingInterval) { clearInterval(streamingInterval); streamingInterval = null }
-        setState({ isStreaming: false })
+        setState(s => {
+            s.isStreaming = false
+        })
     }
 
     function reset() {
+        flush()
         stopStreaming()
         clusteringState = createOnlineKMeansState(k(), algorithm(), distanceMetric(), learningRate(), softmaxBase())
-        setState({ points: [], clusters: [], angularBoundaries: [], pendingPoints: [], currentPointIndex: 0, lastAddedPointId: null })
+        setState(s => {
+            s.points = []
+            s.clusters = []
+            s.angularBoundaries = []
+            s.pendingPoints = []
+            s.currentPointIndex = 0
+            s.lastAddedPointId = null
+        })
     }
 
     return {

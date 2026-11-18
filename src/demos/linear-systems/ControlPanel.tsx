@@ -1,5 +1,5 @@
 import { For, Show, createSignal } from 'solid-js'
-import { simulationStore } from './store'
+import { useSimulationStore } from './store'
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
 import { ConfigRadioGroup } from '../../components/ui-parts/configs/ConfigRadioGroup'
 import { type MatrixType } from './math-utils'
@@ -23,7 +23,7 @@ const normOptions: Array<{ label: string; value: StateNormType }> = [
 ]
 
 export function ControlPanel() {
-    const { state, setN, setMatrixType, setMatrixValue, setInitialStateValue, randomizeInitialState, setGlobalBounds, setStateNorm, togglePlaying, resetSimulation } = simulationStore
+    const { state, setN, setMatrixType, setMatrixValue, setInitialStateValue, randomizeInitialState, setGlobalBounds, setStateNorm, togglePlaying, resetSimulation } = useSimulationStore()
 
     const [selectedCell, setSelectedCell] = createSignal<{ r: number, c: number } | null>(null)
     const [selectedVecIdx, setSelectedVecIdx] = createSignal<number | null>(null)
@@ -131,7 +131,7 @@ export function ControlPanel() {
                                 <For each={row}>
                                     {(val, c) => (
                                         <button
-                                            class={`aspect-square flex items-center justify-center text-[10px] md:text-xs font-mono font-bold border rounded-sm transition-colors ${selectedCell()?.r === r() && selectedCell()?.c === c() ? 'bg-primary text-primary-content border-primary' : val !== 0 ? 'bg-base-200 border-base-300' : 'bg-base-100 border-base-200 text-base-content/40'}`}
+                                            class={["aspect-square flex items-center justify-center text-[10px] md:text-xs font-mono font-bold border rounded-sm transition-colors", selectedCell()?.r === r() && selectedCell()?.c === c() ? 'bg-primary text-primary-content border-primary' : val !== 0 ? 'bg-base-200 border-base-300' : 'bg-base-100 border-base-200 text-base-content/40']}
                                             onClick={() => setSelectedCell({ r: r(), c: c() })}
                                             title={`W[${r()}][${c()}] = ${val.toFixed(2)}`}
                                         >
@@ -178,7 +178,7 @@ export function ControlPanel() {
                     <For each={state.x0}>
                         {(val, idx) => (
                             <button
-                                class={`px-2 py-1 text-xs md:text-sm font-mono font-bold border-2 transition-colors shadow-[2px_2px_0px_0px_#2d2d2d] ${selectedVecIdx() === idx() ? 'bg-secondary text-secondary-content border-[#2d2d2d]' : 'bg-white border-[#2d2d2d] text-[#2d2d2d]'}`}
+                                class={["px-2 py-1 text-xs md:text-sm font-mono font-bold border-2 transition-colors shadow-[2px_2px_0px_0px_#2d2d2d]", selectedVecIdx() === idx() ? 'bg-secondary text-secondary-content border-[#2d2d2d]' : 'bg-white border-[#2d2d2d] text-[#2d2d2d]']}
                                 style={{ 'border-radius': '255px 15px 225px 15px / 15px 225px 15px 255px' }}
                                 onClick={() => setSelectedVecIdx(idx())}
                             >

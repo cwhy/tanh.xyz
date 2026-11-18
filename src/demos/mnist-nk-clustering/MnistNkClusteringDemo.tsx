@@ -1,10 +1,11 @@
-import { For, Show, createMemo, createSignal, type JSX } from 'solid-js'
+import { For, Show, createMemo, createSignal, onSettled } from 'solid-js'
+import type { JSX } from '@solidjs/web'
 import { SingleStageFullLayout } from '../../components/demo-layouts/SingleStageFull'
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
 import { MnistImage } from '../../components/mnist/MnistImage'
 import { createMnistNKStore, type ClusterDisplayInfo } from './store'
 import { EvennessHistoryChart } from './EvennessHistoryChart'
-import { BarChart3 } from 'lucide-solid'
+import { BarChart3 } from '@lucide/solid'
 
 // ---------------------------------------------------------------------------
 // Cluster card
@@ -121,6 +122,7 @@ export function MnistNkClusteringPage(): JSX.Element {
 
 export function MnistNkClusteringDemo(): JSX.Element {
     const store = createMnistNKStore()
+    onSettled(() => () => store.stopStreaming())
 
     // Image size in pixels (display size, not canvas pixels)
     const imageSize = 28
@@ -487,7 +489,7 @@ export function MnistNkClusteringDemo(): JSX.Element {
                             </div>
                             <div class="h-1.5 w-full bg-base-300 rounded-full overflow-hidden">
                                 <div
-                                    class={`h-full transition-all duration-300 ${store.replayQueueLength() > 0 ? 'bg-warning' : 'bg-success'}`}
+                                    class={["h-full transition-all duration-300", store.replayQueueLength() > 0 ? 'bg-warning' : 'bg-success']}
                                     style={{ width: store.replayQueueLength() > 0 ? '100%' : '0%' }}
                                 />
                             </div>

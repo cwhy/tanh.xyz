@@ -1,4 +1,5 @@
-import { createEffect, type JSX } from 'solid-js'
+import { createEffect } from 'solid-js'
+import type { JSX } from '@solidjs/web'
 
 interface MnistImageProps {
     pixels: Float32Array
@@ -14,8 +15,7 @@ interface MnistImageProps {
 export function MnistImage(props: MnistImageProps): JSX.Element {
     let canvas!: HTMLCanvasElement
 
-    createEffect(() => {
-        const pixels = props.pixels
+    createEffect(() => props.pixels, pixels => {
         const ctx = canvas.getContext('2d')
         if (!ctx) return
 

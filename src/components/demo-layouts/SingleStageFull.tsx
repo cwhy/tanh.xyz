@@ -1,5 +1,6 @@
-import type { Component, JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
+import type { Component } from 'solid-js'
+import type { JSX } from '@solidjs/web'
+import { Dynamic } from '@solidjs/web'
 
 interface SingleStageFullLayoutProps {
     title: string

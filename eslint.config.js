@@ -6,13 +6,14 @@ import globals from "globals";
 
 export default defineConfig([
     {
-        ignores: ["dist", ".output", ".vinxi", ".wrangler", "node_modules", ".git"],
+        ignores: ["dist", ".output", ".vinxi", ".wrangler", "node_modules", ".git", "private", "**/site-packages/**"],
     },
+    { files: ["**/*.{js,mjs,cjs}"], languageOptions: { globals: globals.node } },
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {
         files: ["**/*.{ts,tsx}"],
-        ...solid.configs["flat/typescript"],
+        ...solid.configs.v2,
         languageOptions: {
             globals: globals.browser,
         },

@@ -104,7 +104,7 @@ export function initMiniTransformerParams(seed: number): AdditionMiniTransformer
         for (let i = 0; i < size; i++) out[i] = rng.nextNormal() * std
         return out
     }
-    const initLowRank = (inDim: number, outDim: number, rank: number): { A: Float32Array; B: Float32Array } => ({
+    const initLowRank = (inDim: number, outDim: number, rank: number): { A: Float32Array<ArrayBuffer>; B: Float32Array<ArrayBuffer> } => ({
         A: initNormal(inDim * rank, Math.sqrt(2 / (inDim + rank))),
         B: initNormal(rank * outDim, Math.sqrt(2 / (rank + outDim))),
     })

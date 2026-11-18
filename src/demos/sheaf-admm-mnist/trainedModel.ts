@@ -224,12 +224,12 @@ export function runTrainedSheafAdmmMnist(
     const history: SheafAdmmSnapshot[] = []
 
     let state = initialState(model, encoded)
-    history.push(makeSnapshot(model, agents, encoded, state, 0))
+    history.push(makeSnapshot(model, encoded, state, 0))
 
     const limit = Math.max(0, Math.round(iterations))
     for (let iteration = 1; iteration <= limit; iteration++) {
         state = stepState(model, encoded, state)
-        history.push(makeSnapshot(model, agents, encoded, state, iteration))
+        history.push(makeSnapshot(model, encoded, state, iteration))
     }
 
     return {
@@ -572,7 +572,6 @@ function adjointEndpoint(
 
 function makeSnapshot(
     model: TrainedSheafAdmmMnistModel,
-    agents: PatchAgent[],
     encoded: EncodedAgents,
     state: TrainedState,
     iteration: number

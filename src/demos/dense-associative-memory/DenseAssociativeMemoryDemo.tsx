@@ -1,4 +1,5 @@
-import { createEffect, createMemo, createSignal, For, Index, Show, onMount, onCleanup, type JSX } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Show, onSettled } from 'solid-js'
+import type { JSX } from '@solidjs/web'
 import { SingleStageFullLayout } from '../../components/demo-layouts/SingleStageFull'
 import { ConfigSlider } from '../../components/ui-parts/configs/ConfigSlider'
 import { createDamStore, type RecallFrame } from './store'
@@ -53,14 +54,14 @@ function ImagePreview(props: {
     let canvas!: HTMLCanvasElement
     const size = () => props.size ?? 28
 
-    createEffect(() => {
-        if (props.pixels && canvas) {
-            renderPixelsToCanvas(canvas, props.pixels, 28, 28, props.normalize)
+    createEffect(() => ({ pixels: props.pixels, normalize: props.normalize }), ({ pixels, normalize }) => {
+        if (pixels && canvas) {
+            renderPixelsToCanvas(canvas, pixels, 28, 28, normalize)
         }
     })
 
     return (
-        <div class={`relative inline-block ${props.class ?? ''}`}>
+        <div class={["relative inline-block", props.class ?? '']}>
             <canvas
                 ref={canvas}
                 width={28}
@@ -104,7 +105,7 @@ function HiddenBar(props: {
                     }}
                 />
             </div>
-            <span class={`text-[9px] font-mono w-3 ${props.isActive ? 'text-emerald-400 font-bold' : 'opacity-30'}`}>
+            <span class={["text-[9px] font-mono w-3", props.isActive ? 'text-emerald-400 font-bold' : 'opacity-30']}>
                 {props.isActive ? '1' : '0'}
             </span>
         </div>
@@ -215,28 +216,20 @@ export function DenseAssociativeMemoryDemo() {
     const [isAutoPlaying, setIsAutoPlaying] = createSignal(false)
     const [playSpeed, setPlaySpeed] = createSignal(150) // ms per frame
 
-    onMount(() => { void store.initialize() })
+    onSettled(() => { void store.initialize() })
 
-    // Auto-play timer
-    let playTimer: ReturnType<typeof setInterval> | null = null
-
-    createEffect(() => {
-        if (isAutoPlaying()) {
-            playTimer = setInterval(() => {
+    createEffect(
+        () => ({ playing: isAutoPlaying(), speed: playSpeed() }),
+        ({ playing, speed }) => {
+            if (!playing) return
+            const timer = setInterval(() => {
                 const next = state.currentRecallStep + 1
-                if (next >= state.recallFrames.length) {
-                    setIsAutoPlaying(false)
-                } else {
-                    store.setCurrentStep(next)
-                }
-            }, playSpeed())
-        } else {
-            if (playTimer) clearInterval(playTimer)
-            playTimer = null
-        }
-    })
-
-    onCleanup(() => { if (playTimer) clearInterval(playTimer) })
+                if (next >= state.recallFrames.length) setIsAutoPlaying(false)
+                else store.setCurrentStep(next)
+            }, speed)
+            return () => clearInterval(timer)
+        },
+    )
 
     const currentFrame = createMemo<RecallFrame | null>(() => {
         const frames = state.recallFrames
@@ -359,7 +352,7 @@ export function DenseAssociativeMemoryDemo() {
                                 <div class="flex flex-col gap-0.5 max-h-[300px] overflow-y-auto pr-1">
                                     <Show when={currentFrame()}>
                                         {(frame) => (
-                                            <Index each={Array.from(frame().hActivated)}>
+                                            <For keyed={false} each={Array.from(frame().hActivated)}>
                                                 {(ha, i) => (
                                                     <HiddenBar
                                                         hVal={ha()}
@@ -368,7 +361,7 @@ export function DenseAssociativeMemoryDemo() {
                                                         isActive={ha() > 0.05}
                                                     />
                                                 )}
-                                            </Index>
+                                            </For>
                                         )}
                                     </Show>
                                 </div>
@@ -385,14 +378,14 @@ export function DenseAssociativeMemoryDemo() {
                             
                             <div class="my-3 p-3 rounded-lg text-xs leading-relaxed" style={{ background: 'rgba(56, 189, 248, 0.1)', color: '#0369a1', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
                                 <strong class="block mb-1 flex items-center gap-1.5">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                     Theory Note: Feature Compositionality
                                 </strong>
                                 Unlike standard Hopfield networks that store entire patterns as separate attractors, this high-capacity Dense Associative Memory learns a distributed, compositional representation. The basic memories ($\xi$ columns) resemble fractional pencil strokes or digit fragments rather than full numbers. During recall, the network reconstructs a complete memory by activating a sparse combination of these features, granting it exponential storage capacity.
                             </div>
 
                             <div class="flex flex-wrap gap-1.5">
-                                <Index each={state.basicMemoryImages}>
+                                <For keyed={false} each={state.basicMemoryImages}>
                                     {(pixels, i) => {
                                         const isActive = () => currentFrame()?.hActivated[i] ?? 0
                                         return (
@@ -413,7 +406,7 @@ export function DenseAssociativeMemoryDemo() {
                                             </div>
                                         )
                                     }}
-                                </Index>
+                                </For>
                             </div>
                         </div>
                     </Show>
@@ -425,7 +418,7 @@ export function DenseAssociativeMemoryDemo() {
                                 Stored Memories — click to recall (showing first 100)
                             </div>
                             <div class="flex flex-wrap gap-1">
-                                <Index each={Array.from({ length: Math.min(100, state.numMemoriesStored) }, (_, i) => i)}>
+                                <For keyed={false} each={Array.from({ length: Math.min(100, state.numMemoriesStored) }, (_, i) => i)}>
                                     {(idx) => (
                                         <button
                                             onClick={() => handleRecall(idx())}
@@ -447,7 +440,7 @@ export function DenseAssociativeMemoryDemo() {
                                             />
                                         </button>
                                     )}
-                                </Index>
+                                </For>
                             </div>
                         </div>
                     </Show>

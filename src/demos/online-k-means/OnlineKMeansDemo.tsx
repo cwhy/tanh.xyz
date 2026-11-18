@@ -1,4 +1,4 @@
-import { For, Show, createSignal, onCleanup, onMount } from 'solid-js'
+import { For, Show, createSignal, onSettled } from 'solid-js'
 import { createOnlineKMeansStore } from './store'
 import type { AlgorithmType, DistanceMetric } from './algorithm'
 import type { BasicDatasetDistribution } from '../../lib/datasets/basic'
@@ -148,7 +148,7 @@ export function OnlineKMeansDemo() {
     const [plotSize, setPlotSize] = createSignal(canvasSize)
     let stageCanvasContainerRef: HTMLDivElement | undefined
 
-    onMount(() => {
+    onSettled(() => {
         const updatePlotSize = () => {
             if (!stageCanvasContainerRef) return
             const { clientWidth, clientHeight } = stageCanvasContainerRef
@@ -157,7 +157,7 @@ export function OnlineKMeansDemo() {
         updatePlotSize()
         const ro = new ResizeObserver(updatePlotSize)
         ro.observe(stageCanvasContainerRef!)
-        onCleanup(() => ro.disconnect())
+        return () => { ro.disconnect(); store.stopStreaming() }
     })
 
     function handleCanvasClick(e: MouseEvent) {
@@ -241,6 +241,8 @@ export function OnlineKMeansDemo() {
             <div
                 class="rounded-xl border border-base-content/8 bg-base-300/40 px-3 py-2"
                 style={{ 'font-size': '0.9rem', 'line-height': '1.5' }}
+                // Formulas contain only developer-authored MathML; no user input.
+                // eslint-disable-next-line solid/no-innerhtml
                 innerHTML={equationsHtml()}
             />
 
@@ -429,8 +431,8 @@ export function OnlineKMeansDemo() {
                         <Show when={!isAngular()}>
                             <For each={store.clusters()}>
                                 {(c) => {
-                                    if (c.radius === 0) return null
                                     return (
+                                        <Show when={c.radius > 0}>
                                         <circle
                                             cx={c.centroidX * canvasSize}
                                             cy={(1 - c.centroidY) * canvasSize}
@@ -446,6 +448,7 @@ export function OnlineKMeansDemo() {
                                                 'transition': 'opacity 0.2s',
                                             }}
                                         />
+                                        </Show>
                                     )
                                 }}
                             </For>
@@ -523,20 +526,20 @@ export function OnlineKMeansDemo() {
                         {/* Centroids */}
                         <For each={store.clusters()}>
                             {(c) => {
-                                const cx = c.centroidX * canvasSize
-                                const cy = (1 - c.centroidY) * canvasSize
+                                const cx = () => c.centroidX * canvasSize
+                                const cy = () => (1 - c.centroidY) * canvasSize
                                 const isSelected = () => selectedClusterId() === null || selectedClusterId() === c.id
                                 const s = 10
                                 return (
                                     <g style={{ 'opacity': isSelected() ? 1 : 0.15, 'transition': 'opacity 0.2s' }}>
                                         <polygon
-                                            points={`${cx},${cy - s} ${cx + s},${cy} ${cx},${cy + s} ${cx - s},${cy}`}
+                                            points={`${cx()},${cy() - s} ${cx() + s},${cy()} ${cx()},${cy() + s} ${cx() - s},${cy()}`}
                                             fill={c.centroidColor}
                                             stroke="white"
                                             stroke-width={2}
                                         />
-                                        <line x1={cx - 4} y1={cy} x2={cx + 4} y2={cy} stroke="white" stroke-width={1.5} />
-                                        <line x1={cx} y1={cy - 4} x2={cx} y2={cy + 4} stroke="white" stroke-width={1.5} />
+                                        <line x1={cx() - 4} y1={cy()} x2={cx() + 4} y2={cy()} stroke="white" stroke-width={1.5} />
+                                        <line x1={cx()} y1={cy() - 4} x2={cx()} y2={cy() + 4} stroke="white" stroke-width={1.5} />
                                     </g>
                                 )
                             }}
@@ -564,10 +567,10 @@ export function OnlineKMeansDemo() {
                     <div class="flex flex-wrap gap-2 text-sm">
                         <For each={store.clusters()}>
                             {(cluster) => {
-                                const isSelected = selectedClusterId() === cluster.id
+                                const isSelected = () => selectedClusterId() === cluster.id
                                 return (
                                     <span
-                                        class={`flex items-center gap-2 px-2 py-1 rounded-lg border cursor-pointer select-none transition-colors ${isSelected ? 'ring ring-primary ring-offset-1 ring-offset-base-300 ' : ''}border-base-content/5 bg-base-300/50 hover:bg-base-300`}
+                                        class={["flex items-center gap-2 px-2 py-1 rounded-lg border cursor-pointer select-none transition-colors", isSelected() ? 'ring ring-primary ring-offset-1 ring-offset-base-300 ' : '', "border-base-content/5 bg-base-300/50 hover:bg-base-300"]}
                                         onClick={() => setSelectedClusterId(prev => prev === cluster.id ? null : cluster.id)}
                                     >
                                         <span class="w-4 h-4 rounded-full" style={{ 'background-color': cluster.color }} />

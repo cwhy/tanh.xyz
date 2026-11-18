@@ -1,5 +1,4 @@
-import { createSignal } from 'solid-js'
-import { createStore } from 'solid-js/store'
+import { createSignal, createStore } from 'solid-js'
 import { fetchMnistRaw, type MnistFetchProgress } from '../../lib/datasources/mnist'
 import { formatMnistForMlp, getImagePixels, type MnistMlpDataset } from '../../lib/datasets/jax/mnist'
 import {
@@ -117,7 +116,9 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
             clearTimeout(timer)
             timer = null
         }
-        setState({ isRunning: false })
+        setState(s => {
+            s.isRunning = false
+        })
     }
 
     function loadSample(index: number) {
@@ -134,21 +135,29 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
             session = createSheafAdmmSession(pixels, prototypes)
         }
         if (!session) return
-        setState({
-            currentLabel: dataset.test.labels[boundedIndex],
-            currentPixels: pixels,
-            history: [session.initial],
-            error: null,
+        const currentLabel = dataset.test.labels[boundedIndex]
+        const initial = session.initial
+        setState(s => {
+            s.currentLabel = currentLabel
+            s.currentPixels = pixels
+            s.history = [initial]
+            s.error = null
         })
     }
 
     async function initialize() {
         if (state.loadStatus === 'loading' || state.loadStatus === 'ready') return
-        setState({ loadStatus: 'loading', loadProgress: null, error: null })
+        setState(s => {
+            s.loadStatus = 'loading'
+            s.loadProgress = null
+            s.error = null
+        })
 
         try {
             const raw = await fetchMnistRaw({
-                onProgress: progress => setState({ loadProgress: progress }),
+                onProgress: progress => setState(s => {
+                    s.loadProgress = progress
+                }),
             })
             dataset = formatMnistForMlp(raw)
             try {
@@ -156,24 +165,35 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
                 setMaxIterations(trainedModel.config.evalIterations)
                 setDiffusionSteps(trainedModel.config.cgIters)
                 setRho(trainedModel.config.rho)
-                setState({
-                    modelStatus: 'trained',
-                    modelMessage: `Trained checkpoint loaded (${trainedModel.config.checkpointKind}, K=${trainedModel.config.evalIterations}, CG=${trainedModel.config.cgIters}).`,
+                const config = trainedModel.config
+                setState(s => {
+                    s.modelStatus = 'trained'
+                    s.modelMessage = `Trained checkpoint loaded (${config.checkpointKind}, K=${config.evalIterations}, CG=${config.cgIters}).`
                 })
             } catch (modelError) {
                 trainedModel = null
                 const modelMessage = modelError instanceof Error ? modelError.message : 'Trained checkpoint unavailable.'
-                setState({ modelStatus: 'fallback', modelMessage })
+                setState(s => {
+                    s.modelStatus = 'fallback'
+                    s.modelMessage = modelMessage
+                })
             }
             prototypes = trainedModel
                 ? null
                 : buildMnistPrototypes(dataset.train.images, dataset.train.labels, PROTOTYPE_TRAIN_LIMIT)
             setDatasetCount(dataset.test.count)
-            setState({ loadStatus: 'ready', loadProgress: null })
+            setState(s => {
+                s.loadStatus = 'ready'
+                s.loadProgress = null
+            })
             loadSample(sampleIndex())
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to load MNIST.'
-            setState({ loadStatus: 'error', loadProgress: null, error: message })
+            setState(s => {
+                s.loadStatus = 'error'
+                s.loadProgress = null
+                s.error = message
+            })
         }
     }
 
@@ -190,7 +210,7 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
             ? ensureTrainedRun().history[current.iteration + 1]
             : stepSheafAdmm(session.agents, current, params())
         if (!next) return
-        setState('history', history => [...history, next])
+        setState(s => { s.history.push(next) })
     }
 
     function scheduleRun() {
@@ -198,7 +218,9 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
             timer = null
             const current = latest()
             if (!session || !current || current.iteration >= maxIterations()) {
-                setState({ isRunning: false })
+                setState(s => {
+                    s.isRunning = false
+                })
                 return
             }
             stepOnce()
@@ -216,15 +238,17 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
             const appended = trainedModel
                 ? ensureTrainedRun().history.slice(current.iteration + 1, current.iteration + 1 + remaining)
                 : runToySteps(session, current, remaining)
-            setState('history', history => [...history, ...appended])
+            setState(s => { s.history.push(...appended) })
             return
         }
-        setState({ isRunning: true })
+        setState(s => {
+            s.isRunning = true
+        })
         scheduleRun()
     }
 
     function pickNextMistake() {
-        if (!dataset || trainedModel) return
+        if (!dataset || trainedModel || !prototypes) return
         stop()
         const count = dataset.test.count
         let nextIndex = sampleIndex()
@@ -242,7 +266,7 @@ export function createSheafAdmmMnistStore(): SheafAdmmStore {
         loadSample(nextIndex)
         if (session) {
             const preview = runSheafAdmm(session, params(), Math.min(6, maxIterations())).slice(1)
-            setState('history', history => [...history, ...preview])
+            setState(s => { s.history.push(...preview) })
         }
     }
 
